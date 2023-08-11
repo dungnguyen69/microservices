@@ -39,7 +39,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable(value = "id") int id) {
+    public ResponseEntity<User> getUserById(@PathVariable(value = "id") int id) throws InterruptedException {
         return ResponseEntity
                 .ok()
                 .body(_userService

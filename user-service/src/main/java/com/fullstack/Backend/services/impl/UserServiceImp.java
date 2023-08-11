@@ -87,7 +87,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
     }
 
     @Override
-    public Optional<User> findById(int id) throws InterruptedException {
+    public Optional<User> findById(int id) {
         return _userRepository.findById(id);
     }
 
@@ -186,7 +186,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
         String toAddress = user.getEmail();
         String subject = "Please verify your registration";
         String content = "Dear [[name]],<br>" + "Please click the link below to verify your registration:<br>" +
-                         "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>" + "Thank you!<br>";
+                "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>" + "Thank you!<br>";
 
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
@@ -212,7 +212,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
                 .isEnabled())
         {
             messageResponse = new MessageResponse("Sorry, we could not verify account. It maybe already verified," +
-                                                  "or verification code is incorrect.");
+                    "or verification code is incorrect.");
             messageResponse.setStatus("INVALID");
             return CompletableFuture.completedFuture(ResponseEntity
                     .badRequest()
@@ -223,10 +223,10 @@ public class UserServiceImp implements UserService, UserDetailsService {
         Calendar cal = Calendar.getInstance();
 
         if((verificationToken
-                    .getExpiryDate()
-                    .getTime() - cal
-                    .getTime()
-                    .getTime()) <= 0)
+                .getExpiryDate()
+                .getTime() - cal
+                .getTime()
+                .getTime()) <= 0)
         {
             messageResponse = new MessageResponse("Verification code was expired!");
             messageResponse.setStatus("EXPIRED");
@@ -564,7 +564,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
         String toAddress = user.getEmail();
         String subject = "Resend Verification Email";
         String content = "Dear [[name]],<br>" + "Please click the link below to verify your registration:<br>" +
-                         "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>" + "Thank you!<br>";
+                "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>" + "Thank you!<br>";
 
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
@@ -604,7 +604,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
         String toAddress = user.getEmail();
         String subject = "Reset password";
         String content = "Dear [[name]],<br>" + "Please click the link below to reset your password:<br>" +
-                         "<h3><a href=\"[[URL]]\" target=\"_self\">RESET PASSWORD</a></h3>";
+                "<h3><a href=\"[[URL]]\" target=\"_self\">RESET PASSWORD</a></h3>";
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
         helper.setFrom(fromAddress);

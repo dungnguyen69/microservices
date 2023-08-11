@@ -140,7 +140,7 @@ public class DeviceServiceImp implements DeviceService {
         if(errors.size() > 0) return new ResponseEntity<>(errors, BAD_REQUEST);
         Device newDevice = deviceMapper.addDeviceDtoToDevice(dto);
         newDevice.setOwnerId(findUserByName(dto.getOwner()).getId());
-        _deviceRepository.save(newDevice);
+        saveDevice(newDevice);
         AddDeviceResponse addDeviceResponse = new AddDeviceResponse(newDevice, true);
         return new ResponseEntity<>(addDeviceResponse, OK);
     }
@@ -151,6 +151,11 @@ public class DeviceServiceImp implements DeviceService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void saveDevice(Device device) {
+        _deviceRepository.save(device);
     }
 
     @Override
@@ -244,7 +249,7 @@ public class DeviceServiceImp implements DeviceService {
                 .get()
                 .setOwnerId(ownerId);
 
-        _deviceRepository.save(deviceDetail.get());
+        saveDevice(deviceDetail.get());
         detailDeviceResponse.setUpdatedDevice(deviceDetail.get());
         return detailDeviceResponse;
     }
@@ -556,13 +561,13 @@ public class DeviceServiceImp implements DeviceService {
             _keeperOrderService.update(keeperOrder);
         }
 
-        Optional<Device> device = _deviceRepository.findById(input.getDeviceId());
+        Optional<Device> device = getDeviceById(input.getDeviceId());
         if(device.isEmpty()) return CompletableFuture.completedFuture(new ResponseEntity<>(response, NOT_FOUND));
 
         device
                 .get()
                 .setStatus(Status.VACANT);
-        _deviceRepository.save(device.get());
+        saveDevice(device.get());
         response.setKeepDeviceReturned(true);
         response.setOldKeepers(oldKeepers);
         return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
@@ -962,10 +967,10 @@ public class DeviceServiceImp implements DeviceService {
                     .equalsIgnoreCase("less than 3")) devices = devices
                     .stream()
                     .filter(device -> device.getKeeperNumber() < 3 && (device
-                                                                               .getStatus()
-                                                                               .equalsIgnoreCase("OCCUPIED") || device
-                                                                               .getStatus()
-                                                                               .equalsIgnoreCase("VACANT")))
+                            .getStatus()
+                            .equalsIgnoreCase("OCCUPIED") || device
+                            .getStatus()
+                            .equalsIgnoreCase("VACANT")))
                     .collect(Collectors.toList());
             else devices = devices
                     .stream()
@@ -1194,7 +1199,7 @@ public class DeviceServiceImp implements DeviceService {
         if(keeperOrderList == null) return null;
 
         for (KeeperOrder keeperOrder : keeperOrderList) {
-            Optional<Device> device = _deviceRepository.findById(keeperOrder
+            Optional<Device> device = getDeviceById(keeperOrder
                     .getDevice()
                     .getId());
             if(device.isEmpty()) {
@@ -1354,10 +1359,10 @@ public class DeviceServiceImp implements DeviceService {
                     .equalsIgnoreCase("less than 3")) devices = devices
                     .stream()
                     .filter(device -> device.getKeeperNo() < 3 && (device
-                                                                           .getStatus()
-                                                                           .equalsIgnoreCase("OCCUPIED") || device
-                                                                           .getStatus()
-                                                                           .equalsIgnoreCase("VACANT")))
+                            .getStatus()
+                            .equalsIgnoreCase("OCCUPIED") || device
+                            .getStatus()
+                            .equalsIgnoreCase("VACANT")))
                     .collect(Collectors.toList());
             else devices = devices
                     .stream()
@@ -1577,8 +1582,8 @@ public class DeviceServiceImp implements DeviceService {
         }
     }
 
-    private Optional<Device> getDeviceById(int deviceId) {
-        log.info("Info: " + deviceId);
+    @Override
+    public Optional<Device> getDeviceById(int deviceId) {
         return _deviceRepository.findById(deviceId);
     }
 

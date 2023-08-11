@@ -2,11 +2,13 @@ package com.fullstack.Backend.services;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import com.fullstack.Backend.dto.device.*;
 import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
+import com.fullstack.Backend.models.Device;
 import com.fullstack.Backend.responses.device.DetailDeviceResponse;
 import com.fullstack.Backend.responses.device.UpdateDeviceResponse;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,8 @@ public interface DeviceService {
     public CompletableFuture<ResponseEntity<Object>> showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 
     public ResponseEntity<Object> addDevice(AddDeviceDTO dto) throws ExecutionException, InterruptedException;
+
+    void saveDevice(Device device);
 
     public DetailDeviceResponse getDetailDevice(int deviceId) throws InterruptedException, ExecutionException;
 
@@ -50,4 +54,6 @@ public interface DeviceService {
     public ResponseEntity<Object> showOwnedDevicesWithPaging(int ownerId, int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO dto) throws ExecutionException, InterruptedException;
 
     public ResponseEntity<Object> showKeepingDevicesWithPaging(int keeperId, int pageIndex, int pageSize, FilterDeviceDTO dto) throws ExecutionException, InterruptedException;
+
+    Optional<Device> getDeviceById(int deviceId);
 }

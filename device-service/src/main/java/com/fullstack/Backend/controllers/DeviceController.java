@@ -1,6 +1,8 @@
 package com.fullstack.Backend.controllers;
 
 import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
+import com.fullstack.Backend.models.Device;
+import com.fullstack.Backend.models.User;
 import com.fullstack.Backend.responses.device.DetailDeviceResponse;
 import com.fullstack.Backend.responses.device.UpdateDeviceResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -40,6 +42,20 @@ public class DeviceController {
     @Autowired
     DeviceService _deviceService;
 
+    @GetMapping(value = "/{id}")
+    public ResponseEntity<Device> getDeviceById(@PathVariable(value = "id") int id) {
+        return ResponseEntity
+                .ok()
+                .body(_deviceService
+                        .getDeviceById(id)
+                        .orElse(null));
+    }
+
+    @PostMapping
+    public void saveDevice(@RequestBody Device device) {
+        _deviceService.saveDevice(device);
+    }
+
     @GetMapping("/warehouse")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     public CompletableFuture<ResponseEntity<Object>> showDevicesWithPaging(@RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) FilterDeviceDTO deviceFilterDTO) throws InterruptedException, ExecutionException {
@@ -66,8 +82,10 @@ public class DeviceController {
     }
 
     public CompletableFuture<ResponseEntity<Object>> fallbackMethodForResponseEntity(int deviceId, RuntimeException exception) {
-        return CompletableFuture.supplyAsync(() -> new ResponseEntity<>("Something went wrong, please wait a few seconds!", BAD_REQUEST));
+        return CompletableFuture.supplyAsync(
+                () -> new ResponseEntity<>("Something went wrong, please wait a few seconds!", BAD_REQUEST));
     }
+
     @PostMapping(value = "/warehouse", consumes = {"application/json"}, produces = {"application/json"})
     @ResponseBody
     @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
