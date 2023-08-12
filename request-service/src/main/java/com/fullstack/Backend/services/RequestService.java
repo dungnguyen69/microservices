@@ -17,18 +17,18 @@ public interface RequestService {
     public SubmitBookingResponse submitBookingRequest(SubmitBookingRequestDTO requests)
             throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<ResponseEntity<Object>> showRequestListsWithPaging(int employeeId, int pageIndex, int pageSize,
+    public ResponseEntity<Object> showRequestListsWithPaging(int employeeId, int pageIndex, int pageSize,
                                                                                 String sortBy, String sortDir, RequestFilterDTO requestFilter)
             throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<KeywordSuggestionResponse> getSuggestKeywordRequests(int employeeId, int fieldColumn, String keyword,
+    public KeywordSuggestionResponse getSuggestKeywordRequests(int employeeId, int fieldColumn, String keyword,
                                                                                   RequestFilterDTO requestFilter) throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<ResponseEntity<Object>> updateRequestStatus(UpdateStatusRequestDTO updateStatusRequestDTO) throws InterruptedException, ExecutionException;
+    public ResponseEntity<Object> updateRequestStatus(UpdateStatusRequestDTO updateStatusRequestDTO) throws InterruptedException, ExecutionException;
 
     public ResponseEntity<Object> extendDurationRequest(ExtendDurationRequestDTO request) throws InterruptedException, ExecutionException, ParseException;
 
-    public CompletableFuture<Request> findAnOccupiedRequest(int nextKeeperId, int deviceId) throws InterruptedException, ExecutionException, ParseException;
+    public Request findAnOccupiedRequest(int nextKeeperId, int deviceId) throws InterruptedException, ExecutionException, ParseException;
 
     public void updateRequest(Request request) throws InterruptedException, ExecutionException;
 

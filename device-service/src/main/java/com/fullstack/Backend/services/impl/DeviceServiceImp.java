@@ -1589,7 +1589,6 @@ public class DeviceServiceImp implements DeviceService {
                 .block();
     }
 
-    @NewSpan("userServiceLookup")
     private User findUserById(int id) {
         Observation userServiceObservation = Observation.createNotStarted("user-service-lookup",
                 this.observationRegistry).lowCardinalityKeyValue("call", "user-service");

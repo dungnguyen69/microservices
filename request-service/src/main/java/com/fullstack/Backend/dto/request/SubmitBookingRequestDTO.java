@@ -2,20 +2,18 @@ package com.fullstack.Backend.dto.request;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class SubmitBookingRequestDTO {
     List<RequestInput> requestsList;
-    @Getter
-    @Setter
+    @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class RequestInput {
         @NotEmpty

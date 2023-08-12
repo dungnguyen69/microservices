@@ -23,7 +23,7 @@ public interface DeviceService {
 
     public ResponseEntity<Object> addDevice(AddDeviceDTO dto) throws ExecutionException, InterruptedException;
 
-    void saveDevice(Device device);
+    public void saveDevice(Device device);
 
     public DetailDeviceResponse getDetailDevice(int deviceId) throws InterruptedException, ExecutionException;
 
@@ -55,5 +55,5 @@ public interface DeviceService {
 
     public ResponseEntity<Object> showKeepingDevicesWithPaging(int keeperId, int pageIndex, int pageSize, FilterDeviceDTO dto) throws ExecutionException, InterruptedException;
 
-    Optional<Device> getDeviceById(int deviceId);
+    public Optional<Device> getDeviceById(int deviceId);
 }

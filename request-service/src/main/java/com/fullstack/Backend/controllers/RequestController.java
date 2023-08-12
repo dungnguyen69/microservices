@@ -2,7 +2,6 @@ package com.fullstack.Backend.controllers;
 
 import com.fullstack.Backend.dto.request.*;
 import com.fullstack.Backend.responses.device.KeywordSuggestionResponse;
-import com.fullstack.Backend.responses.request.SubmitBookingResponse;
 import com.fullstack.Backend.services.RequestService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -27,18 +26,11 @@ public class RequestController {
     @Autowired
     RequestService _requestService;
 
-    public CompletableFuture<Object> fallbackMethod(int deviceId, RuntimeException exception) {
-        return CompletableFuture.supplyAsync(() -> "Something went wrong, please wait a few seconds!");
-    }
 
-    public CompletableFuture<ResponseEntity<Object>> fallbackMethodForResponseEntity(int deviceId, RuntimeException exception) {
-        return CompletableFuture.supplyAsync(
-                () -> new ResponseEntity<>("Something went wrong, please wait a few seconds!", BAD_REQUEST));
-    }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> getRequestsWithPaging(@PathVariable(value = "id") int employeeId, @RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) RequestFilterDTO requestFilterDTO) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> getRequestsWithPaging(@PathVariable(value = "id") int employeeId, @RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) RequestFilterDTO requestFilterDTO) throws InterruptedException, ExecutionException {
         return _requestService.showRequestListsWithPaging(employeeId, pageNo, pageSize, sortBy, sortDir,
                 requestFilterDTO);
     }
@@ -68,15 +60,15 @@ public class RequestController {
                 .isBlank()) return ResponseEntity
                 .status(NOT_FOUND)
                 .body("Keyword must be non-null");
-        CompletableFuture<KeywordSuggestionResponse> response = _requestService.getSuggestKeywordRequests(employeeId,
+        KeywordSuggestionResponse response = _requestService.getSuggestKeywordRequests(employeeId,
                 fieldColumn, keyword, request);
-        return new ResponseEntity<>(response.get(), OK);
+        return new ResponseEntity<>(response, OK);
     }
 
     @PostMapping("/status-update")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> updateRequestStatus(@RequestBody UpdateStatusRequestDTO request) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> updateRequestStatus(@RequestBody UpdateStatusRequestDTO request) throws InterruptedException, ExecutionException {
         return _requestService.updateRequestStatus(request);
     }
 
@@ -94,5 +86,14 @@ public class RequestController {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    public CompletableFuture<Object> fallbackMethod(SubmitBookingRequestDTO requests, RuntimeException exception) {
+        return CompletableFuture.supplyAsync(() -> "Something went wrong, please wait a few seconds!");
+    }
+
+    public CompletableFuture<ResponseEntity<Object>> fallbackMethodForResponseEntity(int deviceId, RuntimeException exception) {
+        return CompletableFuture.supplyAsync(
+                () -> new ResponseEntity<>("Something went wrong, please wait a few seconds!", BAD_REQUEST));
     }
 }
