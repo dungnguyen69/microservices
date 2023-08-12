@@ -21,6 +21,9 @@ import com.fullstack.Backend.mappers.DeviceMapper;
 import com.fullstack.Backend.responses.device.*;
 import com.fullstack.Backend.services.*;
 import com.fullstack.Backend.utils.*;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -89,6 +92,8 @@ public class DeviceServiceImp implements DeviceService {
     DeviceMapper deviceMapper;
 
     private final WebClient.Builder webClientBuilder;
+
+    private final ObservationRegistry observationRegistry;
 
     @Async
     @Override
@@ -166,33 +171,17 @@ public class DeviceServiceImp implements DeviceService {
         Optional<Device> deviceDetail = getDeviceById(deviceId);
 
         if(deviceDetail.isEmpty()) return response;
-
-        User owner = findUserById(deviceDetail
-                .get()
-                .getOwnerId());
-
-        UpdateDeviceDTO dto = new UpdateDeviceDTO();
-
-        if(owner == null) dto.setOwner(null);
-
-        else dto.setOwner(owner.getUserName());
-
-        CompletableFuture<List<KeeperOrder>> keeperOrderList = _keeperOrderService.getListByDeviceId(deviceDetail
+        List<KeeperOrder> keeperOrderList = _keeperOrderService.getListByDeviceId(deviceDetail
                 .get()
                 .getId()); /* Get a list of keeper orders of a device*/
         List<KeeperOrderListDTO> showKeeperList = keeperOrderList
-                .get()
                 .stream()
                 .map(KeeperOrderListDTO::new)
                 .toList();
-
+        UpdateDeviceDTO dto = new UpdateDeviceDTO();
         dto.loadFromEntity(deviceDetail.get(), showKeeperList);
-        if(!keeperOrderList
-                .get()
-                .isEmpty())
-        {/* Should a list be empty, we set a keeper value is a device's owner */
+        if(!keeperOrderList.isEmpty()) {/* Should a list be empty, we set a keeper value is a device's owner */
             Optional<KeeperOrder> keeperOrder = keeperOrderList
-                    .get()
                     .stream()
                     .max(Comparator.comparing(KeeperOrder::getKeeperNo)); /* Get the latest keeper order of a device*/
             dto.setKeeper(keeperOrder
@@ -210,6 +199,12 @@ public class DeviceServiceImp implements DeviceService {
                 .get()
                 .getOwner()
                 .getUserName());
+
+        User owner = findUserById(deviceDetail
+                .get()
+                .getOwnerId());
+        dto.setOwner(owner.getUserName());
+
         response.setDetailDevice(dto);
         return response;
     }
@@ -487,7 +482,6 @@ public class DeviceServiceImp implements DeviceService {
         List<String> oldKeepers = new ArrayList<>();
         List<KeeperOrder> keeperOrderReturnList = _keeperOrderService
                 .getListByDeviceId(input.getDeviceId())
-                .get()
                 .stream()
                 .filter(ko -> ko.getKeeperNo() > input.getKeeperNo())
                 .toList();
@@ -534,9 +528,7 @@ public class DeviceServiceImp implements DeviceService {
          *  Set device status to VACANT
          *  Display a list of old keepers
          */
-        List<KeeperOrder> keeperOrderReturnList = _keeperOrderService
-                .getListByDeviceId(input.getDeviceId())
-                .get();
+        List<KeeperOrder> keeperOrderReturnList = _keeperOrderService.getListByDeviceId(input.getDeviceId());
         ReturnDeviceResponse response = new ReturnDeviceResponse();
 
         if(keeperOrderReturnList.size() == 0)
@@ -1143,13 +1135,10 @@ public class DeviceServiceImp implements DeviceService {
         for (Device device : devices) {
             DeviceDTO deviceDTO = deviceMapper.deviceToDeviceDto(
                     device);  /* Convert fields that have an id value to a readable value */
-            CompletableFuture<List<KeeperOrder>> keeperOrderList = _keeperOrderService.getListByDeviceId(
+            List<KeeperOrder> keeperOrderList = _keeperOrderService.getListByDeviceId(
                     device.getId()); /* Get a list of keeper orders of a device*/
 
-            if(keeperOrderList
-                    .get()
-                    .isEmpty())
-            { /* Were a list empty, we would set a keeper value is a device's owner */
+            if(keeperOrderList.isEmpty()) { /* Were a list empty, we would set a keeper value is a device's owner */
                 deviceDTO.setKeeper(device
                         .getOwner()
                         .getUserName());
@@ -1158,7 +1147,6 @@ public class DeviceServiceImp implements DeviceService {
             }
 
             Optional<KeeperOrder> keeperOrder = keeperOrderList
-                    .get()
                     .stream()
                     .max(Comparator.comparing(KeeperOrder::getKeeperNo)); /* Get the latest keeper order of a device*/
             deviceDTO.setKeeper(keeperOrder
@@ -1205,11 +1193,9 @@ public class DeviceServiceImp implements DeviceService {
             if(device.isEmpty()) {
                 break;
             }
-            List<KeeperOrder> allKeeperOrderList = _keeperOrderService
-                    .getListByDeviceId(keeperOrder
-                            .getDevice()
-                            .getId())
-                    .get();
+            List<KeeperOrder> allKeeperOrderList = _keeperOrderService.getListByDeviceId(keeperOrder
+                    .getDevice()
+                    .getId());
             KeeperOrder latestOrder = allKeeperOrderList
                     .stream()
                     .max(Comparator.comparing(KeeperOrder::getKeeperNo))
@@ -1603,13 +1589,16 @@ public class DeviceServiceImp implements DeviceService {
                 .block();
     }
 
+    @NewSpan("userServiceLookup")
     private User findUserById(int id) {
-        return webClientBuilder
+        Observation userServiceObservation = Observation.createNotStarted("user-service-lookup",
+                this.observationRegistry).lowCardinalityKeyValue("call", "user-service");
+        return userServiceObservation.observe(() -> webClientBuilder
                 .build()
                 .get()
                 .uri("http://user-service/api/users/{id}", id)
                 .retrieve()
                 .bodyToMono(User.class)
-                .block();
+                .block());
     }
 }

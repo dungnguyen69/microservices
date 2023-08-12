@@ -1,7 +1,6 @@
 package com.fullstack.Backend.services.impl;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,7 +16,6 @@ import com.fullstack.Backend.security.JwtUtils;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,10 +89,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
         return _userRepository.findById(id);
     }
 
-    @Async
     @Override
-    public CompletableFuture<Boolean> doesUserExist(int id) {
-        return CompletableFuture.completedFuture(_userRepository.existsById((long) id));
+    public Boolean doesUserExist(int id) {
+        return _userRepository.existsById((long) id);
     }
 
     @Override
@@ -106,9 +103,8 @@ public class UserServiceImp implements UserService, UserDetailsService {
                 .body(user.orElse(null));
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> authenticateUser(LoginDTO loginRequest, Authentication authentication) {
+    public ResponseEntity<Object> authenticateUser(LoginDTO loginRequest, Authentication authentication) {
         SecurityContextHolder
                 .getContext()
                 .setAuthentication(authentication);
@@ -119,7 +115,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
                 .stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-        return CompletableFuture.completedFuture(ResponseEntity
+        return ResponseEntity
                 .ok()
                 .header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
                 .body(new JwtResponse(userDetails
@@ -134,23 +130,22 @@ public class UserServiceImp implements UserService, UserDetailsService {
                         .getUser()
                         .getPhoneNumber(), userDetails
                         .getUser()
-                        .getProject())));
+                        .getProject()));
     }
 
-    @Async
     @Override
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> registerUser(RegisterDTO registerRequest, String siteURL) throws MessagingException {
+    public ResponseEntity<Object> registerUser(RegisterDTO registerRequest, String siteURL) throws MessagingException {
         if(nameExists(registerRequest.getUserName())) {
-            return CompletableFuture.completedFuture(ResponseEntity
+            return ResponseEntity
                     .badRequest()
-                    .body(new MessageResponse("Error: " + registerRequest.getUserName() + " is already taken!")));
+                    .body(new MessageResponse("Error: " + registerRequest.getUserName() + " is already taken!"));
         }
 
         if(emailExists(registerRequest.getEmail())) {
-            return CompletableFuture.completedFuture(ResponseEntity
+            return ResponseEntity
                     .badRequest()
-                    .body(new MessageResponse("Error: " + registerRequest.getEmail() + " is already in use!")));
+                    .body(new MessageResponse("Error: " + registerRequest.getEmail() + " is already in use!"));
         }
 
         String token = RandomString.make(64);
@@ -176,11 +171,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
         createVerificationToken(user, token);
         String verifyURL = baseUrl + "/email-verification?token=" + token;
         sendVerificationEmail(user, verifyURL);
-        return CompletableFuture.completedFuture(
-                ResponseEntity.ok(new MessageResponse("User registered successfully!")));
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 
-    @Async
     @Override
     public void sendVerificationEmail(User user, String verifyURL) throws MessagingException {
         String toAddress = user.getEmail();
@@ -201,10 +194,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
         mailSender.send(message);
     }
 
-    @Async
     @Override
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> verify(String verificationCode) {
+    public ResponseEntity<Object> verify(String verificationCode) {
         final VerificationToken verificationToken = getVerificationToken(verificationCode);
         MessageResponse messageResponse;
         if(verificationToken == null || verificationToken
@@ -214,9 +206,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
             messageResponse = new MessageResponse("Sorry, we could not verify account. It maybe already verified," +
                     "or verification code is incorrect.");
             messageResponse.setStatus("INVALID");
-            return CompletableFuture.completedFuture(ResponseEntity
+            return ResponseEntity
                     .badRequest()
-                    .body(messageResponse));
+                    .body(messageResponse);
         }
 
         User userByToken = verificationToken.getUser();
@@ -230,9 +222,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
         {
             messageResponse = new MessageResponse("Verification code was expired!");
             messageResponse.setStatus("EXPIRED");
-            return CompletableFuture.completedFuture(ResponseEntity
+            return ResponseEntity
                     .badRequest()
-                    .body(messageResponse));
+                    .body(messageResponse);
         }
 
         userByToken.setEnabled(true);
@@ -240,15 +232,14 @@ public class UserServiceImp implements UserService, UserDetailsService {
         _tokenRepository.delete(verificationToken);
         messageResponse = new MessageResponse("Verify successfully");
         messageResponse.setStatus("VALID");
-        return CompletableFuture.completedFuture(ResponseEntity
+        return ResponseEntity
                 .ok()
-                .body(messageResponse));
+                .body(messageResponse);
 
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> showUsersWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterUserDTO dto) throws ExecutionException, InterruptedException {
+    public ResponseEntity<Object> showUsersWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterUserDTO dto) {
         List<UserDTO> usersList = getUserList(dto);
         List<String> projectList = usersList
                 .stream()
@@ -264,29 +255,27 @@ public class UserServiceImp implements UserService, UserDetailsService {
         response.setTotalElements(totalElements);
         response.setTotalPages(getTotalPages(pageSize, totalElements));
         response.setProjectList(projectList);
-        return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
+        return new ResponseEntity<>(response, OK);
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> resendRegistrationToken(String siteURL, String existingToken) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> resendRegistrationToken(String siteURL, String existingToken) throws MessagingException {
         VerificationToken newToken = generateNewVerificationToken(existingToken);
         User user = newToken.getUser();
         String verifyURL = baseUrl + "/email-verification?token=" + newToken.getToken();
         resendVerificationEmail(user, verifyURL);
-        return CompletableFuture.completedFuture(ResponseEntity.ok(new MessageResponse("Resent successfully!")));
+        return ResponseEntity.ok(new MessageResponse("Resent successfully!"));
     }
 
-    @Async
     @Override
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> sendResetPasswordEmail(String siteURL, String userEmail) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> sendResetPasswordEmail(String siteURL, String userEmail) throws MessagingException {
         String token = RandomString.make(64);
         User user = findByEmail(userEmail);
 
-        if(user == null) return CompletableFuture.completedFuture(ResponseEntity
+        if(user == null) return ResponseEntity
                 .badRequest()
-                .body(new MessageResponse("Email is not valid!")));
+                .body(new MessageResponse("Email is not valid!"));
 
         PasswordResetToken existingToken = findUserFromResetPasswordToken(user);
         if(existingToken != null) {
@@ -294,69 +283,64 @@ public class UserServiceImp implements UserService, UserDetailsService {
                     existingToken.getToken()); /* Change old token to new token and return it */
             String verifyURL = baseUrl + "/receive-forgot-password?token=" + newToken;
             sendResetPasswordEmail(user, verifyURL);
-            return CompletableFuture.completedFuture(ResponseEntity.ok(new MessageResponse("Sent successfully!")));
+            return ResponseEntity.ok(new MessageResponse("Sent successfully!"));
         }
         PasswordResetToken myToken = new PasswordResetToken(token, user);
         _passwordResetTokenRepository.save(myToken);
         String verifyURL = baseUrl + "/receive-forgot-password?token=" + myToken.getToken();
         sendResetPasswordEmail(user, verifyURL);
-        return CompletableFuture.completedFuture(ResponseEntity.ok(new MessageResponse("Sent successfully!")));
+        return ResponseEntity.ok(new MessageResponse("Sent successfully!"));
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> saveResetPassword(ResetPasswordDTO dto) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> saveResetPassword(ResetPasswordDTO dto) {
         Optional<User> user = findById(dto.getId());
 
-        if(user.isEmpty()) return CompletableFuture.completedFuture(ResponseEntity
+        if(user.isEmpty()) return ResponseEntity
                 .badRequest()
-                .body(new MessageResponse("User is not existent")));
+                .body(new MessageResponse("User is not existent"));
 
         boolean isOldPasswordSimilarToNewOne = BCrypt.checkpw(dto.getOldPassword(), user
                 .get()
                 .getPassword());
-        if(!isOldPasswordSimilarToNewOne) /* Compare old password and new password */
-            return CompletableFuture.completedFuture(ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Current password is incorrect!")));
+        if(!isOldPasswordSimilarToNewOne) /* Compare old password and new password */ return ResponseEntity
+                .badRequest()
+                .body(new MessageResponse("Current password is incorrect!"));
 
         if(!Objects.equals(dto.getNewPassword(), dto.getConfirmPassword())) {
-            return CompletableFuture.completedFuture(ResponseEntity
+            return ResponseEntity
                     .badRequest()
-                    .body(new MessageResponse("New password must be identical to confirm password")));
+                    .body(new MessageResponse("New password must be identical to confirm password"));
         }
 
         changeUserPassword(user.get(), dto.getNewPassword());
-        return CompletableFuture.completedFuture(ResponseEntity.ok(new MessageResponse("Changed successfully!")));
+        return ResponseEntity.ok(new MessageResponse("Changed successfully!"));
     }
 
-    @Async
     @Override
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> saveForgotPassword(ForgotPasswordDTO dto) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> saveForgotPassword(ForgotPasswordDTO dto) {
         User user = findByToken(dto.getToken());
-        if(user == null) return CompletableFuture.completedFuture(ResponseEntity
+        if(user == null) return ResponseEntity
                 .badRequest()
-                .body(new MessageResponse("User is not existent")));
+                .body(new MessageResponse("User is not existent"));
 
         PasswordResetToken token = _passwordResetTokenRepository.findByToken(dto.getToken());
-        if(token == null) return CompletableFuture.completedFuture(ResponseEntity
+        if(token == null) return ResponseEntity
                 .badRequest()
-                .body(new MessageResponse("Token is not existent")));
+                .body(new MessageResponse("Token is not existent"));
 
-        if(!Objects.equals(dto.getNewPassword(), dto.getConfirmPassword())) return CompletableFuture.completedFuture(
-                ResponseEntity
-                        .badRequest()
-                        .body(new MessageResponse("Password must be identical to confirm password")));
+        if(!Objects.equals(dto.getNewPassword(), dto.getConfirmPassword())) return ResponseEntity
+                .badRequest()
+                .body(new MessageResponse("Password must be identical to confirm password"));
 
         changeUserPassword(user, dto.getNewPassword());
         _passwordResetTokenRepository.delete(token);
-        return CompletableFuture.completedFuture(ResponseEntity.ok(new MessageResponse("Changed successfully!")));
+        return ResponseEntity.ok(new MessageResponse("Changed successfully!"));
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> verifyPasswordToken(String token) {
+    public ResponseEntity<Object> verifyPasswordToken(String token) {
         final Calendar cal = Calendar.getInstance();
         /* Validate token */
         final PasswordResetToken passToken = _passwordResetTokenRepository.findByToken(token);
@@ -364,9 +348,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
         if(passToken == null) {
             messageResponse = new MessageResponse("User is not valid because token is not existent");
             messageResponse.setStatus("INVALID");
-            return CompletableFuture.completedFuture(ResponseEntity
+            return ResponseEntity
                     .badRequest()
-                    .body(messageResponse));
+                    .body(messageResponse);
         }
 
         boolean isTokenExpired = passToken
@@ -375,39 +359,37 @@ public class UserServiceImp implements UserService, UserDetailsService {
         if(isTokenExpired) {
             messageResponse = new MessageResponse("User is not valid because token is expired");
             messageResponse.setStatus("EXPIRED");
-            return CompletableFuture.completedFuture(ResponseEntity
+            return ResponseEntity
                     .badRequest()
-                    .body(messageResponse));
+                    .body(messageResponse);
         }
 
         messageResponse = new MessageResponse("Verify successfully");
         messageResponse.setStatus("VALID");
-        return CompletableFuture.completedFuture(ResponseEntity
+        return ResponseEntity
                 .ok()
-                .body(messageResponse));
+                .body(messageResponse);
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordUsers(int fieldColumn, String keyword, FilterUserDTO filter) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> getSuggestKeywordUsers(int fieldColumn, String keyword, FilterUserDTO filter) {
         if(keyword
                 .trim()
-                .isBlank()) return CompletableFuture.completedFuture(ResponseEntity
+                .isBlank()) return ResponseEntity
                 .status(NOT_FOUND)
-                .body("Keyword must be non-null"));
+                .body("Keyword must be non-null");
 
         List<User> users = _userRepository.findAll();
         List<UserDTO> deviceList = getAllUser(users, filter);
         Set<String> keywordList = selectColumnForKeywordSuggestion(deviceList, keyword, fieldColumn);
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
-        return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
+        return new ResponseEntity<>(response, OK);
     }
 
-    @Async
     @Override
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> providePermission(int userId, String permission) throws ExecutionException, InterruptedException {
+    public ResponseEntity<Object> providePermission(int userId, String permission) {
         User user = findById(userId).orElseThrow(() -> new RuntimeException("User is not found."));
         SystemRole userRole = _systemRoleRepository
                 .findByName(permission)
@@ -416,17 +398,16 @@ public class UserServiceImp implements UserService, UserDetailsService {
         roles.add(userRole);
         user.setSystemRoles(roles);
         save(user);
-        return CompletableFuture.completedFuture(ResponseEntity.ok(new MessageResponse("UPDATED SUCCESSFULLY!")));
+        return ResponseEntity.ok(new MessageResponse("UPDATED SUCCESSFULLY!"));
     }
 
-    @Async
     @Override
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> updateProfile(ProfileDTO request) throws ExecutionException, InterruptedException {
+    public ResponseEntity<Object> updateProfile(ProfileDTO request) {
         Optional<User> user = findById(request.getId());
-        if(user.isEmpty()) return CompletableFuture.completedFuture(ResponseEntity
+        if(user.isEmpty()) return ResponseEntity
                 .badRequest()
-                .body(new MessageResponse("User does not exist!")));
+                .body(new MessageResponse("User does not exist!"));
 
         user
                 .get()
@@ -444,7 +425,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
                 .get()
                 .setPhoneNumber(request.getPhoneNumber());
         save(user.get());
-        return CompletableFuture.completedFuture(ResponseEntity.ok(new MessageResponse("UPDATED SUCCESSFULLY!")));
+        return ResponseEntity.ok(new MessageResponse("UPDATED SUCCESSFULLY!"));
     }
 
     private List<UserDTO> getAllUser(List<User> users, FilterUserDTO filter) {
@@ -579,7 +560,7 @@ public class UserServiceImp implements UserService, UserDetailsService {
         mailSender.send(message);
     }
 
-    private String generateResetPasswordToken(String existingToken) throws ExecutionException, InterruptedException {
+    private String generateResetPasswordToken(String existingToken) {
         PasswordResetToken rpToken = getResetPasswordToken(existingToken);
         if(rpToken == null) return null;
         rpToken.updateToken();
@@ -592,12 +573,6 @@ public class UserServiceImp implements UserService, UserDetailsService {
     private void changeUserPassword(User user, String password) {
         user.setPassword(encoder.encode(password));
         _userRepository.save(user);
-    }
-
-    @Transactional
-    private void createPasswordResetTokenForUser(User user, String token) {
-        PasswordResetToken myToken = new PasswordResetToken(token, user);
-        _passwordResetTokenRepository.save(myToken);
     }
 
     private void sendResetPasswordEmail(User user, String verifyURL) throws MessagingException {

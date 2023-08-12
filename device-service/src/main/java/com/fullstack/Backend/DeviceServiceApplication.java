@@ -8,7 +8,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication
-@EnableAsync
 @EnableCaching
 @EnableTransactionManagement
 @EnableDiscoveryClient

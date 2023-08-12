@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static com.fullstack.Backend.constant.constant.*;
@@ -48,7 +47,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public CompletableFuture<ResponseEntity<Object>> authenticateUser(@Valid @RequestBody LoginDTO loginRequest) {
+    public ResponseEntity<Object> authenticateUser(@Valid @RequestBody LoginDTO loginRequest) {
         /* If the authentication process is successful,
         we can get User’s information such as username, password,
             authorities from an Authentication object. */
@@ -60,7 +59,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public CompletableFuture<ResponseEntity<Object>> registerUser(@Valid @RequestBody RegisterDTO registerRequest, HttpServletRequest request) throws MessagingException, UnsupportedEncodingException {
+    public ResponseEntity<Object> registerUser(@Valid @RequestBody RegisterDTO registerRequest, HttpServletRequest request) throws MessagingException, UnsupportedEncodingException {
         return _userService.registerUser(registerRequest, getSiteURL(request));
     }
 
@@ -72,61 +71,61 @@ public class UserController {
     }
 
     @PostMapping("/verify")
-    public CompletableFuture<ResponseEntity<Object>> verifyUser(@NotEmpty @RequestBody String token) throws ExecutionException, InterruptedException {
+    public ResponseEntity<Object> verifyUser(@NotEmpty @RequestBody String token) throws ExecutionException, InterruptedException {
         return _userService.verify(token);
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> getUsers(@RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, FilterUserDTO dto) throws ExecutionException, InterruptedException {
+    public ResponseEntity<Object> getUsers(@RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, FilterUserDTO dto) throws ExecutionException, InterruptedException {
         return _userService.showUsersWithPaging(pageNo, pageSize, sortBy, sortDir, dto);
     }
 
     @PostMapping("/resendRegistrationToken")
-    public CompletableFuture<ResponseEntity<Object>> resendRegistrationToken(HttpServletRequest request, @RequestBody String existingToken) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> resendRegistrationToken(HttpServletRequest request, @RequestBody String existingToken) throws ExecutionException, InterruptedException, MessagingException {
         return _userService.resendRegistrationToken(getSiteURL(request), existingToken);
     }
 
     /*Send email*/
     @PostMapping("/reset_password")
-    public CompletableFuture<ResponseEntity<Object>> sendResetPasswordEmail(HttpServletRequest request, @NotNull @RequestParam("email") String userEmail) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> sendResetPasswordEmail(HttpServletRequest request, @NotNull @RequestParam("email") String userEmail) throws ExecutionException, InterruptedException, MessagingException {
         return _userService.sendResetPasswordEmail(getSiteURL(request), userEmail);
     }
 
     /* For reset password and forgot password   */
     @PostMapping("/verify_reset_password_token")
-    public CompletableFuture<ResponseEntity<Object>> showChangePasswordPage(@NotNull @RequestBody String token) throws ExecutionException, InterruptedException, IOException {
+    public ResponseEntity<Object> showChangePasswordPage(@NotNull @RequestBody String token) {
         return _userService.verifyPasswordToken(token);
     }
 
     @PutMapping("/save_reset_password")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> saveResetPassword(@Valid @RequestBody ResetPasswordDTO dto) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> saveResetPassword(@Valid @RequestBody ResetPasswordDTO dto) throws ExecutionException, InterruptedException, MessagingException {
         return _userService.saveResetPassword(dto);
     }
 
     @PutMapping("/save_forgot_password")
-    public CompletableFuture<ResponseEntity<Object>> saveForgotPassword(@Valid @RequestBody ForgotPasswordDTO dto) throws ExecutionException, InterruptedException, MessagingException {
+    public ResponseEntity<Object> saveForgotPassword(@Valid @RequestBody ForgotPasswordDTO dto) throws ExecutionException, InterruptedException, MessagingException {
         return _userService.saveForgotPassword(dto);
     }
 
     @PutMapping("/authorization")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
-    public CompletableFuture<ResponseEntity<Object>> providePermission(@RequestParam(name = "userId") int userId, @RequestParam(name = "permission") String permission) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> providePermission(@RequestParam(name = "userId") int userId, @RequestParam(name = "permission") String permission) throws InterruptedException, ExecutionException {
         return _userService.providePermission(userId, permission);
     }
 
     @GetMapping("/suggestion")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordDevices(@RequestParam(name = "column") int fieldColumn, @RequestParam(name = "keyword") String keyword, FilterUserDTO filter) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> getSuggestKeywordDevices(@RequestParam(name = "column") int fieldColumn, @RequestParam(name = "keyword") String keyword, FilterUserDTO filter) throws InterruptedException, ExecutionException {
         return _userService.getSuggestKeywordUsers(fieldColumn, keyword, filter);
     }
 
     @PutMapping("/update_profile")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> updateProfile(@Valid @RequestBody ProfileDTO request) throws ExecutionException, InterruptedException {
+    public ResponseEntity<Object> updateProfile(@Valid @RequestBody ProfileDTO request) throws ExecutionException, InterruptedException {
         return _userService.updateProfile(request);
     }
 }

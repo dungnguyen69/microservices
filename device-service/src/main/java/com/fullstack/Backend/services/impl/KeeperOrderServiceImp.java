@@ -16,10 +16,9 @@ public class KeeperOrderServiceImp implements KeeperOrderService {
     @Autowired
     KeeperOrderRepository _keeperOrderRepository;
 
-    @Async
     @Override
-    public CompletableFuture<List<KeeperOrder>> getListByDeviceId(int deviceId) throws InterruptedException, ExecutionException {
-        return CompletableFuture.completedFuture(_keeperOrderRepository.findKeeperOrderByDeviceId(deviceId));
+    public List<KeeperOrder> getListByDeviceId(int deviceId) {
+        return _keeperOrderRepository.findKeeperOrderByDeviceId(deviceId);
     }
 
     @Async
