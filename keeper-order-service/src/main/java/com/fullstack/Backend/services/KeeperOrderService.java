@@ -6,10 +6,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public interface KeeperOrderService {
-    public CompletableFuture<List<KeeperOrder>> getListByDeviceId(int deviceId)
+    public List<KeeperOrder> getListByDeviceId(int deviceId)
             throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<KeeperOrder> findByDeviceIdAndKeeperId(int deviceId,int keeperId)
+    public KeeperOrder findByDeviceIdAndKeeperId(int deviceId, int keeperId)
             throws InterruptedException, ExecutionException;
 
     public void create(KeeperOrder keeperOrder)
@@ -18,9 +18,9 @@ public interface KeeperOrderService {
     public void update(KeeperOrder keeperOrder)
             throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<List<KeeperOrder>> getAllKeeperOrders();
+    public List<KeeperOrder> getAllKeeperOrders();
 
-    public CompletableFuture<List<KeeperOrder>> findByKeeperId(int keeperId);
+    public List<KeeperOrder> findByKeeperId(int keeperId);
 
     public void findByReturnedDevice(int deviceId);
 }
