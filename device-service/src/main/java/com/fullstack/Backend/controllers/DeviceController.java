@@ -2,13 +2,9 @@ package com.fullstack.Backend.controllers;
 
 import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
 import com.fullstack.Backend.models.Device;
-import com.fullstack.Backend.models.User;
-import com.fullstack.Backend.responses.device.DetailDeviceResponse;
-import com.fullstack.Backend.responses.device.UpdateDeviceResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -36,7 +32,6 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/devices")
-@RequiredArgsConstructor
 public class DeviceController {
 
     @Autowired
@@ -128,7 +123,7 @@ public class DeviceController {
     @DeleteMapping("/warehouse/{id}")
     @ResponseBody
     @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> deleteDevice(@PathVariable(value = "id") int deviceId) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> deleteDevice(@PathVariable(value = "id") int deviceId) throws InterruptedException, ExecutionException {
         return _deviceService.deleteDevice(deviceId);
     }
 

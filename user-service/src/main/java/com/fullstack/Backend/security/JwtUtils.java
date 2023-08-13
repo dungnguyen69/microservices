@@ -31,13 +31,18 @@ public class JwtUtils {
     private String jwtCookie;
 
     public ResponseCookie generateJwtCookie(UserDetailsImpl userPrincipal) {
-        String jwt = generateTokenFromUsername(userPrincipal.getUsername());
-        return ResponseCookie.from(jwtCookie, jwt).path("/api").maxAge(24 * 60 * 60).httpOnly(true).build();
+        String jwt = generateTokenFromUsername(userPrincipal);
+        return ResponseCookie
+                .from(jwtCookie, jwt)
+                .path("/api")
+                .maxAge(24 * 60 * 60)
+                .httpOnly(true)
+                .build();
     }
 
     public String getJwtFromCookies(HttpServletRequest request) {
         Cookie cookie = WebUtils.getCookie(request, jwtCookie);
-        if (cookie != null) {
+        if(cookie != null) {
             return cookie.getValue();
         } else {
             return null;
@@ -45,10 +50,14 @@ public class JwtUtils {
     }
 
     /* GENERATE a JWT from username, date, expiration, secret */
-    public String generateTokenFromUsername(String username) {
-        return Jwts.builder()
-                .setSubject(username)
+    public String generateTokenFromUsername(UserDetailsImpl userPrincipal) {
+        return Jwts
+                .builder()
+                .setSubject(userPrincipal.getUsername())
                 .setIssuedAt(new Date())
+                .claim("roles", userPrincipal
+                        .getAuthorities()
+                        .toString())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
@@ -60,13 +69,23 @@ public class JwtUtils {
 
     /* get username from JWT */
     public String getUserNameFromJwtToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key()).build() /* expect the incoming string to be a signed JWT */
-                .parseClaimsJws(token).getBody().getSubject(); /* verifying the signature, and will throw an exception if the signature is invalid */
+        return Jwts
+                .parserBuilder()
+                .setSigningKey(key())
+                .build() /* expect the incoming string to be a signed JWT */
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject(); /* verifying the signature, and will throw an exception if the signature is invalid */
     }
+
     /* validate a JWT */
     public boolean validateJwtToken(String authToken) {
         try {
-            Jwts.parserBuilder().setSigningKey(key()).build().parse(authToken);
+            Jwts
+                    .parserBuilder()
+                    .setSigningKey(key())
+                    .build()
+                    .parse(authToken);
             return true;
         } catch (MalformedJwtException e) {
             logger.error("Invalid JWT token: {}", e.getMessage());

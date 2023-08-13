@@ -29,7 +29,7 @@ public interface DeviceService {
 
     public UpdateDeviceResponse updateDevice(int deviceId, UpdateDeviceDTO device) throws ExecutionException, InterruptedException;
 
-    public CompletableFuture<ResponseEntity<Object>> deleteDevice(int deviceId) throws ExecutionException, InterruptedException;
+    public ResponseEntity<Object> deleteDevice(int deviceId) throws ExecutionException, InterruptedException;
 
     public void exportToExcel(HttpServletResponse response) throws IOException, ExecutionException, InterruptedException;
 

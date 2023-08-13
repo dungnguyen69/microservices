@@ -21,7 +21,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /* Spring Security */
 @Configuration
-@ComponentScan(basePackages = {"com.fullstack.Backend.services"})
 @EnableMethodSecurity
 public class WebSecurityConfig {
 

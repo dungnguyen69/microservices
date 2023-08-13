@@ -23,7 +23,6 @@ import com.fullstack.Backend.services.*;
 import com.fullstack.Backend.utils.*;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
@@ -84,9 +83,6 @@ public class DeviceServiceImp implements DeviceService {
 
     @Autowired
     KeeperOrderService _keeperOrderService;
-
-    @Autowired
-    RequestService _requestService;
 
     @Autowired
     DeviceMapper deviceMapper;
@@ -249,39 +245,38 @@ public class DeviceServiceImp implements DeviceService {
         return detailDeviceResponse;
     }
 
-    @Async
     @Override
     @Caching(evict = {@CacheEvict(value = "detail_device", key = "#deviceId")})
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> deleteDevice(int deviceId) {
+    public ResponseEntity<Object> deleteDevice(int deviceId) {
         DeleteDeviceResponse response = new DeleteDeviceResponse();
 
         if(doesDeviceExist(deviceId)) {
             response.setErrorMessage("Device is not existent");
-            return CompletableFuture.completedFuture(new ResponseEntity<>(response, NOT_FOUND));
+            return new ResponseEntity<>(response, NOT_FOUND);
         }
-        if(_requestService.findRequestBasedOnStatusAndDevice(deviceId, PENDING)) {
-            _requestService.deleteRequestBasedOnStatusAndDevice(deviceId, PENDING);
+        if(findRequestBasedOnStatusAndDevice(deviceId, PENDING)) {
+            deleteRequestBasedOnStatusAndDevice(deviceId, PENDING);
         }
-        if(_requestService.findRequestBasedOnStatusAndDevice(deviceId, RETURNED)) {
-            _requestService.deleteRequestBasedOnStatusAndDevice(deviceId, RETURNED);
+        if(findRequestBasedOnStatusAndDevice(deviceId, RETURNED)) {
+            deleteRequestBasedOnStatusAndDevice(deviceId, RETURNED);
             _keeperOrderService.findByReturnedDevice(deviceId);
         }
-        if(_requestService.findRequestBasedOnStatusAndDevice(deviceId, APPROVED)) {
+        if(findRequestBasedOnStatusAndDevice(deviceId, APPROVED)) {
             response.setErrorMessage("Cannot delete by virtue of approved requests for this device");
-            return CompletableFuture.completedFuture(new ResponseEntity<>(response, NOT_FOUND));
+            return new ResponseEntity<>(response, NOT_FOUND);
         }
-        if(_requestService.findRequestBasedOnStatusAndDevice(deviceId, TRANSFERRED)) {
+        if(findRequestBasedOnStatusAndDevice(deviceId, TRANSFERRED)) {
             response.setErrorMessage("Cannot delete by virtue of transferred requests for this device");
-            return CompletableFuture.completedFuture(new ResponseEntity<>(response, NOT_FOUND));
+            return new ResponseEntity<>(response, NOT_FOUND);
         }
-        if(_requestService.findRequestBasedOnStatusAndDevice(deviceId, EXTENDING)) {
+        if(findRequestBasedOnStatusAndDevice(deviceId, EXTENDING)) {
             response.setErrorMessage("Cannot delete because someone uses this device");
-            return CompletableFuture.completedFuture(new ResponseEntity<>(response, NOT_FOUND));
+            return new ResponseEntity<>(response, NOT_FOUND);
         }
         _deviceRepository.deleteById((long) deviceId);
         response.setIsDeletionSuccessful(true);
-        return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
+        return new ResponseEntity<>(response, OK);
     }
 
     @Async
@@ -490,11 +485,9 @@ public class DeviceServiceImp implements DeviceService {
             return CompletableFuture.completedFuture(new ResponseEntity<>(response, NOT_FOUND));
 
         for (KeeperOrder keeperOrder : keeperOrderReturnList) {
-            Request occupiedRequest = _requestService
-                    .findAnOccupiedRequest(keeperOrder
-                            .getKeeper()
-                            .getId(), input.getDeviceId())
-                    .get();
+            Request occupiedRequest = findAnOccupiedRequest(keeperOrder
+                    .getKeeper()
+                    .getId(), input.getDeviceId());
             occupiedRequest.setCurrentKeeper_Id(input.getCurrentKeeperId());
             occupiedRequest.setRequestStatus(RETURNED);
             keeperOrder.setIsReturned(true);
@@ -502,7 +495,7 @@ public class DeviceServiceImp implements DeviceService {
             oldKeepers.add(keeperOrder
                     .getKeeper()
                     .getUserName());
-            _requestService.updateRequest(occupiedRequest);
+            updateRequest(occupiedRequest);
             _keeperOrderService.update(keeperOrder);
         }
 
@@ -536,11 +529,9 @@ public class DeviceServiceImp implements DeviceService {
 
         List<String> oldKeepers = new ArrayList<>();
         for (KeeperOrder keeperOrder : keeperOrderReturnList) {
-            Request occupiedRequest = _requestService
-                    .findAnOccupiedRequest(keeperOrder
-                            .getKeeper()
-                            .getId(), input.getDeviceId())
-                    .get();
+            Request occupiedRequest = findAnOccupiedRequest(keeperOrder
+                    .getKeeper()
+                    .getId(), input.getDeviceId());
             occupiedRequest.setCurrentKeeper_Id(input.getCurrentKeeperId());
             occupiedRequest.setRequestStatus(RETURNED);
             keeperOrder.setIsReturned(true);
@@ -549,7 +540,7 @@ public class DeviceServiceImp implements DeviceService {
                     .getKeeper()
                     .getUserName());
             occupiedRequest.setUpdatedDate(new Date());
-            _requestService.updateRequest(occupiedRequest);
+            updateRequest(occupiedRequest);
             _keeperOrderService.update(keeperOrder);
         }
 
@@ -1590,8 +1581,9 @@ public class DeviceServiceImp implements DeviceService {
     }
 
     private User findUserById(int id) {
-        Observation userServiceObservation = Observation.createNotStarted("user-service-lookup",
-                this.observationRegistry).lowCardinalityKeyValue("call", "user-service");
+        Observation userServiceObservation = Observation
+                .createNotStarted("user-service-lookup", this.observationRegistry)
+                .lowCardinalityKeyValue("call", "user-service");
         return userServiceObservation.observe(() -> webClientBuilder
                 .build()
                 .get()
@@ -1599,5 +1591,56 @@ public class DeviceServiceImp implements DeviceService {
                 .retrieve()
                 .bodyToMono(User.class)
                 .block());
+    }
+
+    private boolean findRequestBasedOnStatusAndDevice(int deviceId, int requestStatus) {
+        return Boolean.TRUE.equals(webClientBuilder
+                .build()
+                .get()
+                .uri("http://request-service/api/requests", uriBuilder -> uriBuilder
+                        .queryParam("deviceId", deviceId)
+                        .queryParam("requestStatus", requestStatus)
+                        .build())
+                .retrieve()
+                .bodyToMono(Boolean.class)
+                .block());
+    }
+
+    private void deleteRequestBasedOnStatusAndDevice(int deviceId, int requestStatus) {
+        webClientBuilder
+                .build()
+                .delete()
+                .uri("http://request-service/api/requests", uriBuilder -> uriBuilder
+                        .queryParam("deviceId", deviceId)
+                        .queryParam("requestStatus", requestStatus)
+                        .build())
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+    }
+
+    private Request findAnOccupiedRequest(int nextKeeperId, int deviceId) {
+        return webClientBuilder
+                .build()
+                .get()
+                .uri("http://request-service/api/requests/occupied-requests", uriBuilder -> uriBuilder
+                        .queryParam("nextKeeperId", nextKeeperId)
+                        .queryParam("deviceId", deviceId)
+                        .build())
+                .retrieve()
+                .bodyToMono(Request.class)
+                .block();
+    }
+
+    private void updateRequest(Request request) {
+        webClientBuilder
+                .build()
+                .put()
+                .uri("http://request-service/api/requests/occupied-requests", uriBuilder -> uriBuilder
+                        .queryParam("request", request)
+                        .build())
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
     }
 }
