@@ -1,7 +1,7 @@
 package com.fullstack.Backend.controllers;
 
 import com.fullstack.Backend.dto.request.*;
-import com.fullstack.Backend.responses.device.KeywordSuggestionResponse;
+import com.fullstack.Backend.responses.request.KeywordSuggestionResponse;
 import com.fullstack.Backend.services.RequestService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;

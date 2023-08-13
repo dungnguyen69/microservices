@@ -1,4 +1,4 @@
-package com.fullstack.Backend.responses.users;
+package com.fullstack.Backend.responses.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

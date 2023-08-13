@@ -1,7 +1,6 @@
 package com.fullstack.Backend.services;
 
 import java.text.ParseException;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import com.fullstack.Backend.dto.request.ExtendDurationRequestDTO;
@@ -9,7 +8,7 @@ import com.fullstack.Backend.dto.request.RequestFilterDTO;
 import com.fullstack.Backend.dto.request.SubmitBookingRequestDTO;
 import com.fullstack.Backend.dto.request.UpdateStatusRequestDTO;
 import com.fullstack.Backend.models.Request;
-import com.fullstack.Backend.responses.device.KeywordSuggestionResponse;
+import com.fullstack.Backend.responses.request.KeywordSuggestionResponse;
 import com.fullstack.Backend.responses.request.SubmitBookingResponse;
 import org.springframework.http.ResponseEntity;
 
