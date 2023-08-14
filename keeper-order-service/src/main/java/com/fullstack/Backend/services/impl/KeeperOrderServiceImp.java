@@ -4,6 +4,7 @@ import com.fullstack.Backend.models.KeeperOrder;
 import com.fullstack.Backend.repositories.interfaces.KeeperOrderRepository;
 import com.fullstack.Backend.services.KeeperOrderService;
 import jakarta.transaction.Transactional;
+import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -13,13 +14,16 @@ import java.util.concurrent.ExecutionException;
 
 @Service
 @Transactional
+@Log
 public class KeeperOrderServiceImp implements KeeperOrderService {
     @Autowired
     KeeperOrderRepository _keeperOrderRepository;
 
     @Override
     public List<KeeperOrder> getListByDeviceId(int deviceId) {
-        return _keeperOrderRepository.findKeeperOrderByDeviceId(deviceId);
+        List<KeeperOrder> lists = _keeperOrderRepository.findKeeperOrderByDeviceId(deviceId);
+        log.info(String.valueOf(lists));
+        return lists;
     }
 
     @Override
@@ -48,7 +52,7 @@ public class KeeperOrderServiceImp implements KeeperOrderService {
     }
 
     @Override
-    public void findByReturnedDevice(int deviceId) {
+    public void deleteReturnedDevice(int deviceId) {
         List<KeeperOrder> keeperOrderList = _keeperOrderRepository.findByReturnedDevice(deviceId);
         for (KeeperOrder keeperOrder : keeperOrderList) {
             _keeperOrderRepository.delete(keeperOrder);

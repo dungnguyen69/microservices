@@ -8,16 +8,15 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication
-@EnableAsync
 @EnableCaching
 @EnableTransactionManagement
 @EnableDiscoveryClient
-public class DeviceServiceApplication {
+public class KeeperOrderServiceApplication {
 
     public static void main(String[] args) {
 
         try {
-            SpringApplication app = new SpringApplication(DeviceServiceApplication.class);
+            SpringApplication app = new SpringApplication(KeeperOrderServiceApplication.class);
             app.run(args);
         } catch(Throwable ex) {
             ex.printStackTrace();

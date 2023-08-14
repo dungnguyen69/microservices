@@ -1,10 +1,18 @@
 package com.fullstack.Backend.security;
 
+import com.fullstack.Backend.models.SystemRole;
+import com.fullstack.Backend.models.User;
+import com.fullstack.Backend.services.impl.UserDetailsImpl;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +21,9 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.security.Key;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /* A filter that executes once per request */
@@ -20,8 +31,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtils jwtUtils;
 
-    @Autowired
-    private UserDetailsService _userService;
+    @Value("${fullstack.app.jwtSecret}")
+    private String SECRET_KEY;
+
 
     /* – get JWT from the Authorization header (by removing Bearer prefix)
         – if the request has JWT, validate it, parse username from it
@@ -32,8 +44,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         try {
             String jwt = parseJwt(request);
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                String username = jwtUtils.getUserNameFromJwtToken(jwt);
-                UserDetails userDetails = _userService.loadUserByUsername(username);
+                UserDetails userDetails = extractUserFromJwt(jwt);
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
@@ -55,7 +66,40 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    private Key key() {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET_KEY));
+    }
+
     private String parseJwt(HttpServletRequest request) {
         return jwtUtils.getJwtFromCookies(request);
+    }
+
+    public Claims parseClaims(String token) {
+        return Jwts
+                .parserBuilder()
+                .setSigningKey(key())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    private UserDetails extractUserFromJwt(String jwt) {
+        String username = jwtUtils.getUserNameFromJwtToken(jwt);
+        User user = new User();
+        user.setUserName(username);
+        Set<SystemRole> systemRoles = new HashSet<>();
+        Claims claims = parseClaims(jwt);
+        String roles = (String) claims.get("roles");
+        roles = roles
+                .replace("[", "")
+                .replace("]", "");
+        String[] roleNames = roles.split(",");
+        for (var role : roleNames) {
+            SystemRole SR = new SystemRole();
+            SR.setName(role);
+            systemRoles.add(SR);
+        }
+        user.setSystemRoles(systemRoles);
+        return UserDetailsImpl.build(user);
     }
 }

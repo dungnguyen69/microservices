@@ -22,5 +22,5 @@ public interface KeeperOrderService {
 
     public List<KeeperOrder> findByKeeperId(int keeperId);
 
-    public void findByReturnedDevice(int deviceId);
+    public void deleteReturnedDevice(int deviceId);
 }
