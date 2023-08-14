@@ -1,6 +1,7 @@
 package com.fullstack.Backend.controllers;
 
 import com.fullstack.Backend.dto.request.*;
+import com.fullstack.Backend.models.Request;
 import com.fullstack.Backend.responses.request.KeywordSuggestionResponse;
 import com.fullstack.Backend.services.RequestService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -26,7 +27,25 @@ public class RequestController {
     @Autowired
     RequestService _requestService;
 
+    @GetMapping
+    public boolean findRequestBasedOnStatusAndDevice(@RequestParam int deviceId, @RequestParam int requestStatus) {
+        return _requestService.findRequestBasedOnStatusAndDevice(deviceId, requestStatus);
+    }
 
+    @DeleteMapping
+    public void deleteRequestBasedOnStatusAndDevice(@RequestParam int deviceId, @RequestParam int requestStatus) {
+        _requestService.deleteRequestBasedOnStatusAndDevice(deviceId, requestStatus);
+    }
+
+    @GetMapping("/occupied-requests")
+    public Request findAnOccupiedRequest(@RequestParam int nextKeeperId, @RequestParam int deviceId) throws ParseException, ExecutionException, InterruptedException {
+        return _requestService.findAnOccupiedRequest(nextKeeperId, deviceId);
+    }
+
+    @PutMapping("/occupied-requests")
+    public void updateRequest(@RequestParam Request request) throws ExecutionException,InterruptedException {
+        _requestService.updateRequest(request);
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
@@ -60,8 +79,8 @@ public class RequestController {
                 .isBlank()) return ResponseEntity
                 .status(NOT_FOUND)
                 .body("Keyword must be non-null");
-        KeywordSuggestionResponse response = _requestService.getSuggestKeywordRequests(employeeId,
-                fieldColumn, keyword, request);
+        KeywordSuggestionResponse response = _requestService.getSuggestKeywordRequests(employeeId, fieldColumn, keyword,
+                request);
         return new ResponseEntity<>(response, OK);
     }
 

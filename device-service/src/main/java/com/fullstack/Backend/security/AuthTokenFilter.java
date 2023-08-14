@@ -41,24 +41,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
         try {
             String jwt = parseJwt(request);
             if(jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                String username = jwtUtils.getUserNameFromJwtToken(jwt);
-                User user = new User();
-                user.setUserName(username);
-                Set<SystemRole> systemRoles = new HashSet<>();
-                Claims claims = parseClaims(jwt);
-                String roles = (String) claims.get("roles");
-                roles = roles
-                        .replace("[", "")
-                        .replace("]", "");
-                String[] roleNames = roles.split(",");
-                for (var role : roleNames) {
-                    SystemRole SR = new SystemRole();
-                    SR.setName(role);
-                    systemRoles.add(SR);
-                }
-                user.setSystemRoles(systemRoles);
-                UserDetails userDetails = UserDetailsImpl.build(user);
-
+                UserDetails userDetails = extractUserFromJwt(jwt);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -95,5 +78,25 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    private UserDetails extractUserFromJwt(String jwt) {
+        String username = jwtUtils.getUserNameFromJwtToken(jwt);
+        User user = new User();
+        user.setUserName(username);
+        Set<SystemRole> systemRoles = new HashSet<>();
+        Claims claims = parseClaims(jwt);
+        String roles = (String) claims.get("roles");
+        roles = roles
+                .replace("[", "")
+                .replace("]", "");
+        String[] roleNames = roles.split(",");
+        for (var role : roleNames) {
+            SystemRole SR = new SystemRole();
+            SR.setName(role);
+            systemRoles.add(SR);
+        }
+        user.setSystemRoles(systemRoles);
+        return UserDetailsImpl.build(user);
     }
 }
