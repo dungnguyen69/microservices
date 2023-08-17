@@ -21,6 +21,7 @@ import net.bytebuddy.utility.RandomString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +46,6 @@ import static org.springframework.http.HttpStatus.OK;
 
 
 @Service
-@CacheConfig(cacheNames = {"user"})
 @Slf4j
 public class UserServiceImp implements UserService, UserDetailsService {
     @Autowired
@@ -86,18 +86,13 @@ public class UserServiceImp implements UserService, UserDetailsService {
 
     @Override
     public Optional<User> findById(int id) {
+        log.info("User ID: " + id);
         return _userRepository.findById(id);
-    }
-
-    @Override
-    public Boolean doesUserExist(int id) {
-        return _userRepository.existsById((long) id);
     }
 
     @Override
     public ResponseEntity<Object> findByUsername(String username) {
         var user = _userRepository.findByUserName(username);
-
         return ResponseEntity
                 .ok()
                 .body(user.orElse(null));
