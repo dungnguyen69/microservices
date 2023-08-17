@@ -1,28 +1,26 @@
-//package com.backendserver.apigateway.config;
-//
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.security.config.Customizer;
-//import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
-//import org.springframework.security.config.web.server.ServerHttpSecurity;
-//import org.springframework.security.web.server.SecurityWebFilterChain;
-//
-//@Configuration
-//@EnableWebFluxSecurity
-//public class SecurityConfig {
-//
-//    @Bean
-//    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity) {
-//
-//        serverHttpSecurity
-//                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-//                .authorizeExchange(exchange -> exchange
-//                        .pathMatchers("/eureka/**")
-//                        .permitAll()
-//                        .anyExchange()
-//                        .authenticated())
-//                .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
-//        //https://github.com/spring-projects/spring-security/issues/13446
-//        return serverHttpSecurity.build();
-//    }
-//}
+package com.backendserver.apigateway.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
+
+@Configuration
+@EnableWebFluxSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity) {
+        serverHttpSecurity
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .authorizeExchange(exchange -> exchange
+                        .pathMatchers("/eureka/**", "/api/users/**", "/api/devices/**", "/api/requests/**",
+                                "/api/keeper-orders/**")
+                        .permitAll()
+                        .anyExchange()
+                        .authenticated());
+        //https://github.com/spring-projects/spring-security/issues/13446
+        return serverHttpSecurity.build();
+    }
+}
