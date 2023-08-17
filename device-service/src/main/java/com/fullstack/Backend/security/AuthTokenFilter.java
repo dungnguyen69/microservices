@@ -26,6 +26,7 @@ import java.util.*;
 
 /* A filter that executes once per request */
 public class AuthTokenFilter extends OncePerRequestFilter {
+
     @Autowired
     private JwtUtils jwtUtils;
 
@@ -48,6 +49,7 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                 SecurityContextHolder
                         .getContext()
                         .setAuthentication(authentication);
+                logger.debug(userDetails);
             }
         } catch (Exception e) {
             logger.error("Cannot set user authentication: {}", e);

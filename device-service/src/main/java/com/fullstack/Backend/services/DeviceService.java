@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 public interface DeviceService {
 
-    public CompletableFuture<ResponseEntity<Object>> showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
+    public ResponseEntity<Object> showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 
     public ResponseEntity<Object> addDevice(AddDeviceDTO dto) throws ExecutionException, InterruptedException;
 

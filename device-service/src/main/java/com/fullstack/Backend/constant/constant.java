@@ -18,23 +18,6 @@ public class constant {
     public static final int DEVICE_SERIAL_NUMBER_COLUMN = 8;
     public static final int DEVICE_KEEPER_COLUMN = 9;
 
-    // For request keyword suggestion
-    public static final int REQUEST_REQUEST_ID_COLUMN = 0;
-    public static final int REQUEST_DEVICE_NAME_COLUMN = 1;
-    public static final int REQUEST_DEVICE_SERIAL_NUMBER_COLUMN = 2;
-    public static final int REQUEST_REQUESTER_COLUMN = 3;
-    public static final int REQUEST_CURRENT_KEEPER_COLUMN = 4;
-    public static final int REQUEST_NEXT_KEEPER_COLUMN = 5;
-    public static final int REQUEST_APPROVER_COLUMN = 6;
-
-    // For user keyword suggestion
-    public static final int USER_BADGE_ID_COLUMN = 0;
-    public static final int USER_NAME_COLUMN = 1;
-    public static final int USER_FIRST_NAME_COLUMN = 2;
-    public static final int USER_LAST_NAME_COLUMN = 3;
-    public static final int USER_EMAIL_COLUMN = 4;
-    public static final int USER_PHONE_NUMBER_COLUMN = 5;
-
     // For import
     public static final int DEVICE_NAME = 0;
     public static final int DEVICE_STATUS = 1;

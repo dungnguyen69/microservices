@@ -37,6 +37,8 @@ public class DeviceController {
     @Autowired
     DeviceService _deviceService;
 
+    private final String user = "user";
+
     @GetMapping(value = "/{id}")
     public ResponseEntity<Device> getDeviceById(@PathVariable(value = "id") int id) {
         return ResponseEntity
@@ -53,15 +55,15 @@ public class DeviceController {
 
     @GetMapping("/warehouse")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> showDevicesWithPaging(@RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) FilterDeviceDTO deviceFilterDTO) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> showDevicesWithPaging(@RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) FilterDeviceDTO deviceFilterDTO) throws InterruptedException, ExecutionException {
         return _deviceService.showDevicesWithPaging(pageNo, pageSize, sortBy, sortDir, deviceFilterDTO);
     }
 
     @GetMapping("/warehouse/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    @CircuitBreaker(name = "user", fallbackMethod = "fallbackMethod")
-    @TimeLimiter(name = "user")
-    @Retry(name = "user")
+    @CircuitBreaker(name = user, fallbackMethod = "fallbackMethod")
+    @TimeLimiter(name = user, fallbackMethod = "fallbackMethod")
+    @Retry(name = user)
     public CompletableFuture<Object> getDetailDevice(@PathVariable(value = "id") int deviceId) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -72,11 +74,11 @@ public class DeviceController {
         });
     }
 
-    public CompletableFuture<Object> fallbackMethod(int deviceId, RuntimeException exception) {
+    public CompletableFuture<Object> fallbackMethod(RuntimeException exception) {
         return CompletableFuture.supplyAsync(() -> "Something went wrong, please wait a few seconds!");
     }
 
-    public CompletableFuture<ResponseEntity<Object>> fallbackMethodForResponseEntity(int deviceId, RuntimeException exception) {
+    public CompletableFuture<ResponseEntity<Object>> fallbackMethodForResponseEntity(RuntimeException exception) {
         return CompletableFuture.supplyAsync(
                 () -> new ResponseEntity<>("Something went wrong, please wait a few seconds!", BAD_REQUEST));
     }
@@ -84,9 +86,9 @@ public class DeviceController {
     @PostMapping(value = "/warehouse", consumes = {"application/json"}, produces = {"application/json"})
     @ResponseBody
     @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
-    @CircuitBreaker(name = "user", fallbackMethod = "fallbackMethodForResponseEntity")
-    @TimeLimiter(name = "user")
-    @Retry(name = "user")
+    @CircuitBreaker(name = user, fallbackMethod = "fallbackMethodForResponseEntity")
+    @TimeLimiter(name = user)
+    @Retry(name = user)
     public CompletableFuture<ResponseEntity<Object>> addANewDevice(@Valid @RequestBody AddDeviceDTO device) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -99,10 +101,10 @@ public class DeviceController {
 
     @PutMapping("/warehouse/{id}")
     @ResponseBody
-    @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
-    @CircuitBreaker(name = "user", fallbackMethod = "fallbackMethod")
-    @TimeLimiter(name = "user")
-    @Retry(name = "user")
+//    @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
+    @CircuitBreaker(name = user, fallbackMethod = "fallbackMethod")
+    @TimeLimiter(name = user)
+    @Retry(name = user)
     public CompletableFuture<Object> updateDevice(@PathVariable(value = "id") int deviceId, @Valid @RequestBody UpdateDeviceDTO device) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -151,9 +153,9 @@ public class DeviceController {
     @PostMapping(value = "/warehouse/import/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @ResponseBody
     @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
-    @CircuitBreaker(name = "user", fallbackMethod = "fallbackMethodForResponseEntity")
-    @TimeLimiter(name = "user")
-    @Retry(name = "user")
+    @CircuitBreaker(name = user, fallbackMethod = "fallbackMethodForResponseEntity")
+    @TimeLimiter(name = user)
+    @Retry(name = user)
     public CompletableFuture<ResponseEntity<Object>> importFile(@PathVariable(value = "id") int ownerId, @RequestParam("file") MultipartFile file) {
 
         return CompletableFuture.supplyAsync(() -> {
@@ -175,9 +177,9 @@ public class DeviceController {
     @GetMapping("/owners/{id}")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    @CircuitBreaker(name = "user", fallbackMethod = "fallbackMethodForResponseEntity")
-    @TimeLimiter(name = "user")
-    @Retry(name = "user")
+    @CircuitBreaker(name = user, fallbackMethod = "fallbackMethodForResponseEntity")
+    @TimeLimiter(name = user)
+    @Retry(name = user, fallbackMethod = "fallbackMethodForResponseEntity")
     public CompletableFuture<ResponseEntity<Object>> getDevicesOfOwner(@PathVariable(value = "id") int ownerId, @RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, @DateTimeFormat(pattern = "yyyy-MM-dd") FilterDeviceDTO deviceFilterDTO) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -199,9 +201,9 @@ public class DeviceController {
     @GetMapping("/keepers/{id}")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    @CircuitBreaker(name = "user", fallbackMethod = "fallbackMethodForResponseEntity")
-    @TimeLimiter(name = "user")
-    @Retry(name = "user")
+    @CircuitBreaker(name = user, fallbackMethod = "fallbackMethodForResponseEntity")
+    @TimeLimiter(name = user)
+    @Retry(name = user)
     public CompletableFuture<ResponseEntity<Object>> getDevicesOfKeeper(@PathVariable(value = "id") int ownerId, @RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @DateTimeFormat(pattern = "yyyy-MM-dd") FilterDeviceDTO deviceFilterDTO) {
         return CompletableFuture.supplyAsync(() -> {
             try {

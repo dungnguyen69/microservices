@@ -29,6 +29,9 @@ import lombok.extern.java.Log;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.*;
 import org.springframework.data.domain.Sort;
@@ -58,7 +61,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 @CacheConfig(cacheNames = {"device"})
-@Log
 @RequiredArgsConstructor
 @Transactional
 public class DeviceServiceImp implements DeviceService {
@@ -82,18 +84,16 @@ public class DeviceServiceImp implements DeviceService {
     StorageService _storageService;
 
     @Autowired
-    KeeperOrderService _keeperOrderService;
-
-    @Autowired
     DeviceMapper deviceMapper;
 
     private final WebClient.Builder webClientBuilder;
 
     private final ObservationRegistry observationRegistry;
 
-    @Async
+    final static Logger logger = LoggerFactory.getLogger(DeviceServiceImp.class);
+
     @Override
-    public CompletableFuture<ResponseEntity<Object>> showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort
                 .by(sortBy)
                 .ascending() : Sort
@@ -127,10 +127,11 @@ public class DeviceServiceImp implements DeviceService {
         int totalElements = deviceList.size();
         deviceList = getPage(deviceList, pageIndex, pageSize); /*Pagination*/
         /* Return the desired response*/
+        logger.info("Device list after pagination: {}", deviceList);
         DeviceInWarehouseResponse deviceResponse = new DeviceInWarehouseResponse(deviceList, statusList, originList,
                 projectList, itemTypeList, keeperNumberOptions, pageIndex, pageSize, totalElements,
                 getTotalPages(pageSize, totalElements));
-        return CompletableFuture.completedFuture(new ResponseEntity<>(deviceResponse, OK));
+        return new ResponseEntity<>(deviceResponse, OK);
     }
 
     @Override
@@ -141,6 +142,7 @@ public class DeviceServiceImp implements DeviceService {
         if(errors.size() > 0) return new ResponseEntity<>(errors, BAD_REQUEST);
         Device newDevice = deviceMapper.addDeviceDtoToDevice(dto);
         newDevice.setOwnerId(findUserByName(dto.getOwner()).getId());
+        logger.debug("New Device: {}", newDevice);
         saveDevice(newDevice);
         AddDeviceResponse addDeviceResponse = new AddDeviceResponse(newDevice, true);
         return new ResponseEntity<>(addDeviceResponse, OK);
@@ -162,22 +164,23 @@ public class DeviceServiceImp implements DeviceService {
     @Override
     @Cacheable(value = "detail_device", key = "#deviceId")
     public DetailDeviceResponse getDetailDevice(int deviceId) throws InterruptedException, ExecutionException {
-        System.out.print("fetching from DB! \n");
+//        System.out.print("fetching from DB! \n");
         DetailDeviceResponse response = new DetailDeviceResponse();
         Optional<Device> deviceDetail = getDeviceById(deviceId);
 
         if(deviceDetail.isEmpty()) return response;
-        List<KeeperOrder> keeperOrderList = _keeperOrderService.getListByDeviceId(deviceDetail
+        KeeperOrder[] keeperOrderList = getListByDeviceId(deviceDetail
                 .get()
                 .getId()); /* Get a list of keeper orders of a device*/
-        List<KeeperOrderListDTO> showKeeperList = keeperOrderList
+        List<KeeperOrder> list = Arrays.asList(keeperOrderList);
+        List<KeeperOrderListDTO> showKeeperList = list
                 .stream()
                 .map(KeeperOrderListDTO::new)
                 .toList();
         UpdateDeviceDTO dto = new UpdateDeviceDTO();
         dto.loadFromEntity(deviceDetail.get(), showKeeperList);
-        if(!keeperOrderList.isEmpty()) {/* Should a list be empty, we set a keeper value is a device's owner */
-            Optional<KeeperOrder> keeperOrder = keeperOrderList
+        if(!showKeeperList.isEmpty()) {/* Should a list be empty, we set a keeper value is a device's owner */
+            Optional<KeeperOrder> keeperOrder = list
                     .stream()
                     .max(Comparator.comparing(KeeperOrder::getKeeperNo)); /* Get the latest keeper order of a device*/
             dto.setKeeper(keeperOrder
@@ -260,7 +263,7 @@ public class DeviceServiceImp implements DeviceService {
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, RETURNED)) {
             deleteRequestBasedOnStatusAndDevice(deviceId, RETURNED);
-            _keeperOrderService.findByReturnedDevice(deviceId);
+            deleteReturnedDevice(deviceId);
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, APPROVED)) {
             response.setErrorMessage("Cannot delete by virtue of approved requests for this device");
@@ -475,8 +478,8 @@ public class DeviceServiceImp implements DeviceService {
          */
         ReturnDeviceResponse response = new ReturnDeviceResponse();
         List<String> oldKeepers = new ArrayList<>();
-        List<KeeperOrder> keeperOrderReturnList = _keeperOrderService
-                .getListByDeviceId(input.getDeviceId())
+        List<KeeperOrder> keeperOrderReturnList = Arrays
+                .asList(getListByDeviceId(input.getDeviceId()))
                 .stream()
                 .filter(ko -> ko.getKeeperNo() > input.getKeeperNo())
                 .toList();
@@ -496,7 +499,7 @@ public class DeviceServiceImp implements DeviceService {
                     .getKeeper()
                     .getUserName());
             updateRequest(occupiedRequest);
-            _keeperOrderService.update(keeperOrder);
+            updateKeeper(keeperOrder);
         }
 
         response.setKeepDeviceReturned(true);
@@ -521,7 +524,7 @@ public class DeviceServiceImp implements DeviceService {
          *  Set device status to VACANT
          *  Display a list of old keepers
          */
-        List<KeeperOrder> keeperOrderReturnList = _keeperOrderService.getListByDeviceId(input.getDeviceId());
+        List<KeeperOrder> keeperOrderReturnList = Arrays.asList(getListByDeviceId(input.getDeviceId()));
         ReturnDeviceResponse response = new ReturnDeviceResponse();
 
         if(keeperOrderReturnList.size() == 0)
@@ -541,7 +544,7 @@ public class DeviceServiceImp implements DeviceService {
                     .getUserName());
             occupiedRequest.setUpdatedDate(new Date());
             updateRequest(occupiedRequest);
-            _keeperOrderService.update(keeperOrder);
+            updateKeeper(keeperOrder);
         }
 
         Optional<Device> device = getDeviceById(input.getDeviceId());
@@ -1126,8 +1129,8 @@ public class DeviceServiceImp implements DeviceService {
         for (Device device : devices) {
             DeviceDTO deviceDTO = deviceMapper.deviceToDeviceDto(
                     device);  /* Convert fields that have an id value to a readable value */
-            List<KeeperOrder> keeperOrderList = _keeperOrderService.getListByDeviceId(
-                    device.getId()); /* Get a list of keeper orders of a device*/
+            List<KeeperOrder> keeperOrderList = Arrays.asList(
+                    getListByDeviceId(device.getId())); /* Get a list of keeper orders of a device*/
 
             if(keeperOrderList.isEmpty()) { /* Were a list empty, we would set a keeper value is a device's owner */
                 deviceDTO.setKeeper(device
@@ -1170,9 +1173,7 @@ public class DeviceServiceImp implements DeviceService {
 
     private List<KeepingDeviceDTO> getDevicesOfKeeper(int keeperId, FilterDeviceDTO deviceFilter) throws ExecutionException, InterruptedException {
         formatFilter(deviceFilter); /* Remove spaces and make input text become lowercase*/
-        List<KeeperOrder> keeperOrderList = _keeperOrderService
-                .findByKeeperId(keeperId)
-                .get();
+        List<KeeperOrder> keeperOrderList = findByKeeperId(keeperId);
         List<KeepingDeviceDTO> keepingDeviceList = new ArrayList<>();
 
         if(keeperOrderList == null) return null;
@@ -1184,9 +1185,9 @@ public class DeviceServiceImp implements DeviceService {
             if(device.isEmpty()) {
                 break;
             }
-            List<KeeperOrder> allKeeperOrderList = _keeperOrderService.getListByDeviceId(keeperOrder
+            List<KeeperOrder> allKeeperOrderList = Arrays.asList(getListByDeviceId(keeperOrder
                     .getDevice()
-                    .getId());
+                    .getId()));
             KeeperOrder latestOrder = allKeeperOrderList
                     .stream()
                     .max(Comparator.comparing(KeeperOrder::getKeeperNo))
@@ -1641,6 +1642,48 @@ public class DeviceServiceImp implements DeviceService {
                         .build())
                 .retrieve()
                 .bodyToMono(Void.class)
+                .block();
+    }
+
+    private KeeperOrder[] getListByDeviceId(int deviceId) {
+        return webClientBuilder
+                .build()
+                .get()
+                .uri("http://keeper-order-service/api/keeper-orders/devices/{deviceId}", deviceId)
+                .retrieve()
+                .bodyToMono(KeeperOrder[].class)
+                .block();
+    }
+
+    private void deleteReturnedDevice(int deviceId) {
+        webClientBuilder
+                .build()
+                .delete()
+                .uri("http://keeper-order-service/api/keeper-orders/{deviceId}", deviceId)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+    }
+
+    private void updateKeeper(KeeperOrder keeperOrder) {
+        webClientBuilder
+                .build()
+                .put()
+                .uri("http://keeper-order-service/api/keeper-orders", uriBuilder -> uriBuilder
+                        .queryParam("keeperOrder", keeperOrder)
+                        .build())
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+    }
+
+    private List<KeeperOrder> findByKeeperId(int keeperId) {
+        return (List<KeeperOrder>) webClientBuilder
+                .build()
+                .get()
+                .uri("http://keeper-order/api/keeper-orders/keepers/{keeperId}", keeperId)
+                .retrieve()
+                .bodyToMono(Collection.class)
                 .block();
     }
 }
