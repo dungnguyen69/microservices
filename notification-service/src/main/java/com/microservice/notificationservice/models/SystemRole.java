@@ -1,4 +1,5 @@
-package com.fullstack.Backend.models;
+package com.microservice.notificationservice.models;
+
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,8 +14,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Permissions")
-public class Permission extends BaseEntity{
-	@Column(nullable = false)
-	private String privilege;
+@Table(name = "SystemRoles")
+public class SystemRole extends BaseEntity {
+	@Column(nullable = false,length = 20)
+	private String name;
 }
