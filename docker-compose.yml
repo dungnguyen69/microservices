@@ -1,27 +1,197 @@
 ---
 version: '3.7'
 services:
-    zookeeper:
-      image: confluentinc/cp-zookeeper:7.0.1
-      container_name: zookeeper
-      ports:
-        - "2181:2181"
-      environment:
-        ZOOKEEPER_CLIENT_PORT: 2181
-        ZOOKEEPER_TICK_TIME: 2000
 
-    broker:
-      image: confluentinc/cp-kafka:7.0.1
-      container_name: broker
-      ports:
-        - "9092:9092"
-      depends_on:
-        - zookeeper
-      environment:
-        KAFKA_BROKER_ID: 1
-        KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
-        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+  ## Redis
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis:/data/redis
+
+  ## MySQL
+  mysql-device:
+    container_name: mysql-device
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456789
+      MYSQL_DATABASE: devicemanagementdb
+    volumes:
+      - ./mysql-device:/data/mysql
+    ports:
+      - 3308:3306
+    restart: always
+
+  ## Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: broker
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  ## Zipkin
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+#    environment:
+#      - MANAGEMENT.ZIPKIN.TRACING.ENDPOINT=http://zipkin:9411/api/v2/spans
+    restart: always
+
+  ## Eureka Server
+  discovery-server:
+    image: jukibach/discovery-server:latest
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      EUREKA_SERVER: "discovery-server"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
+      SPRING_PROFILES_ACTIVE: "docker"
+    depends_on:
+      - zipkin
+
+  api-gateway:
+    image: jukibach/api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8181:8080"
+    expose:
+      - "8181"
+    environment:
+      SPRING_PROFILES_ACTIVE: "docker"
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: "TRACE"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
+    depends_on:
+      - zipkin
+      - discovery-server
+
+  ## Device-Service Docker Compose Config
+  device-service:
+    container_name: device-service
+    image: jukibach/device-service:latest
+    restart: always
+    environment:
+      EUREKA_SERVER: "discovery-server"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
+      SPRING_PROFILES_ACTIVE: "docker"
+    depends_on:
+      - discovery-server
+      - api-gateway
+      - mysql-device
+      - zipkin
+
+  ## Keeper Order Service Docker Compose Config
+  keeper-order-service:
+    container_name: keeper-order-service
+    image: jukibach/keeper-order-service:latest
+    environment:
+      EUREKA_SERVER: "discovery-server"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
+      SPRING_PROFILES_ACTIVE: "docker"
+    depends_on:
+      - mysql-device
+      - broker
+      - zipkin
+      - discovery-server
+      - api-gateway
+
+  ## Request Service Docker Compose Config
+  request-service:
+    container_name: request-service
+    image: jukibach/request-service:latest
+    environment:
+      EUREKA_SERVER: "discovery-server"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
+      SPRING_PROFILES_ACTIVE: "docker"
+    depends_on:
+      - mysql-device
+      - discovery-server
+      - api-gateway
+      - zipkin
+      - broker
+
+  ## Notification-Service Docker Compose Config
+  notification-service:
+    container_name: notification-service
+    image: jukibach/notification-service:latest
+    environment:
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
+      SPRING_PROFILES_ACTIVE: "docker"
+    depends_on:
+      - zipkin
+      - broker
+      - discovery-server
+      - api-gateway
+
+  ## User Service Docker Compose Config
+  user-service:
+    container_name: user-service
+    image: jukibach/user-service:latest
+    environment:
+      EUREKA_SERVER: "discovery-server"
+      MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
+      SPRING_PROFILES_ACTIVE: "docker"
+    depends_on:
+      - mysql-device
+      - discovery-server
+      - api-gateway
+      - zipkin
+      - broker
+
+  ## Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - device-service
+      - keeper-order-service
+      - request-service
+      - user-service
+      - notification-service
+
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    links:
+      - prometheus:prometheus
+    volumes:
+      - ./grafana:/var/lib/grafana
+    environment:
+        GF_SECURITY_ADMIN_USER: admin
+        GF_SECURITY_ADMIN_PASSWORD: password
