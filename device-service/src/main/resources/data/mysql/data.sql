@@ -1,3 +1,4 @@
+CREATE DATABASE IF NOT EXISTS 'devicemanagementdb';
 CREATE TABLE IF NOT EXISTS devices (
   id INT AUTO_INCREMENT NOT NULL,
    created_date datetime NOT NULL,
