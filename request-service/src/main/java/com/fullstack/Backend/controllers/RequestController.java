@@ -43,7 +43,7 @@ public class RequestController {
     }
 
     @PutMapping("/occupied-requests")
-    public void updateRequest(@RequestParam Request request) throws ExecutionException,InterruptedException {
+    public void updateRequest(@RequestParam Request request) throws ExecutionException, InterruptedException {
         _requestService.updateRequest(request);
     }
 
@@ -107,6 +107,7 @@ public class RequestController {
         });
     }
 
+    @ResponseStatus(BAD_REQUEST)
     public CompletableFuture<Object> fallbackMethod(SubmitBookingRequestDTO requests, RuntimeException exception) {
         return CompletableFuture.supplyAsync(() -> "Something went wrong, please wait a few seconds!");
     }

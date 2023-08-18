@@ -12,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import static com.fullstack.Backend.constant.constant.*;
 
 @Repository
-
 public interface RequestRepository extends JpaRepository<Request, Long>, JpaSpecificationExecutor<Request> {
     public static final String FIND_ALL_REQUESTS_BY_EMPLOYEE_ID = "SELECT r FROM Request r WHERE "
             + "currentKeeper_Id = :employeeId "
