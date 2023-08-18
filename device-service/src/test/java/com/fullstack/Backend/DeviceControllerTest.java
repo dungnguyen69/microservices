@@ -12,13 +12,13 @@ import com.fullstack.Backend.enums.Status;
 import com.fullstack.Backend.mappers.DeviceMapper;
 import com.fullstack.Backend.mappers.DeviceMapperImp;
 import com.fullstack.Backend.models.Device;
-import com.fullstack.Backend.responses.device.AddDeviceResponse;
-import com.fullstack.Backend.responses.device.DeleteDeviceResponse;
-import com.fullstack.Backend.responses.device.DeviceInWarehouseResponse;
-import com.fullstack.Backend.responses.device.UpdateDeviceResponse;
+import com.fullstack.Backend.models.Storage;
+import com.fullstack.Backend.responses.device.*;
 import com.fullstack.Backend.services.DeviceService;
+import com.fullstack.Backend.utils.dropdowns.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -27,17 +27,17 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.projection.ProjectionFactory;
+import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -82,7 +82,8 @@ public class DeviceControllerTest {
     }
 
     @Test
-    public void testListShouldReturn200() throws Exception {
+    @DisplayName("Should Show List of Devices using Pagination")
+    public void shouldShowDevicesWithPagination() throws Exception {
         DeviceDTO mockDevice1 = DeviceDTO
                 .builder()
                 .Id(1)
@@ -167,7 +168,8 @@ public class DeviceControllerTest {
     }
 
     @Test
-    public void testAddShouldReturn400BadRequest() throws Exception {
+    @DisplayName("Should Fail When Add Invalid Device")
+    public void shouldReturnBadRequestWhenAddDevice() throws Exception {
         AddDeviceDTO newDevice = AddDeviceDTO
                 .builder()
                 .deviceName("Air pod")
@@ -205,7 +207,8 @@ public class DeviceControllerTest {
     }
 
     @Test
-    public void testAddShouldReturn200Ok() throws Exception {
+    @DisplayName("Should Add Device")
+    public void shouldReturn200WhenAddDevice() throws Exception {
         AddDeviceDTO newDevice = AddDeviceDTO
                 .builder()
                 .deviceName("Air pod")
@@ -244,7 +247,8 @@ public class DeviceControllerTest {
     }
 
     @Test
-    public void testUpdateShouldReturn200Ok() throws Exception {
+    @DisplayName("Should Update Device")
+    public void shouldReturn200WhenUpdateDevice() throws Exception {
         int deviceId = 0;
         Device device = Device
                 .builder()
@@ -283,7 +287,7 @@ public class DeviceControllerTest {
 
         Optional<Device> updatedDevice = deviceMapper.updateDtoToDevice(device, dto);
         UpdateDeviceResponse response = new UpdateDeviceResponse();
-        response.setUpdatedDevice(updatedDevice.get());
+        response.setUpdatedDevice(updatedDevice.orElse(null));
         when(deviceService.updateDevice(eq(deviceId), refEq(dto))).thenReturn(response);
         String requestBody = ow.writeValueAsString(dto);
 
@@ -304,14 +308,83 @@ public class DeviceControllerTest {
     }
 
     @Test
-    public void testDeleteShouldReturn200OK() throws Exception {
+    @DisplayName("Should Delete Device Successfully")
+    public void shouldReturn200WhenDeleteDevice() throws Exception {
         int deviceId = 0;
         DeleteDeviceResponse response = new DeleteDeviceResponse();
         response.setIsDeletionSuccessful(true);
         when(deviceService.deleteDevice(eq(deviceId))).thenReturn(new ResponseEntity<>(response, OK));
 
-        mockMvc.perform(delete(END_POINT + "/warehouse/" + deviceId))
-               .andExpect(status().isOk())
-               .andDo(print());
+        mockMvc
+                .perform(delete(END_POINT + "/warehouse/" + deviceId))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Should Retrieve List of Keywords")
+    public void shouldSuggestKeywordDevices() throws Exception {
+        Set<String> keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
+        KeywordSuggestionResponse response = new KeywordSuggestionResponse();
+        FilterDeviceDTO dto = new FilterDeviceDTO();
+        response.setKeywordList(keywordList);
+
+        when(deviceService.getSuggestKeywordDevices(eq(0), eq("a"), Mockito.any(FilterDeviceDTO.class))).thenReturn(
+                new ResponseEntity<>(response, OK));
+
+        mockMvc
+                .perform(get(END_POINT + "/warehouse/suggestion")
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .param("column", String.valueOf(0))
+                        .param("keyword", "a")
+                        .param("device", String.valueOf(dto))
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andDo(print())
+                .andReturn();
+    }
+
+    @Test
+    @DisplayName("Should Return Drop-down Values")
+    public void shouldReturnDropdownValues() throws Exception {
+        ProjectionFactory factory = new SpelAwareProxyProjectionFactory();
+        PlatformList platform = factory.createProjection(PlatformList.class);
+        platform.setId(1);
+        platform.setName("Window");
+        ItemTypeList itemType = factory.createProjection(ItemTypeList.class);
+        itemType.setId(1);
+        itemType.setName("PC");
+        RamList ram = factory.createProjection(RamList.class);
+        ram.setId(1);
+        ram.setName("16GB");
+        ScreenList screen = factory.createProjection(ScreenList.class);
+        screen.setId(1);
+        screen.setName("13 inch");
+        StorageList storage = factory.createProjection(StorageList.class);
+        storage.setId(1);
+        storage.setName("512GB");
+        StatusList status = new StatusList(1, "OCCUPIED");
+        ProjectList project = new ProjectList(1, "Telsa");
+        OriginList origin = new OriginList(1, "EXTERNAL");
+        List<ItemTypeList> itemTypeList = List.of(itemType);
+        List<RamList> ramList = List.of(ram);
+        List<PlatformList> platformList = List.of(platform);
+        List<ScreenList> screenList = List.of(screen);
+        List<StorageList> storageList = List.of(storage);
+        List<StatusList> statusList = List.of(status);
+        List<ProjectList> projectList = List.of(project);
+        List<OriginList> originList = List.of(origin);
+        DropdownValuesResponse response = new DropdownValuesResponse(statusList, itemTypeList, originList, platformList,
+                screenList, projectList, storageList, ramList);
+
+        when(deviceService.getDropDownValues()).thenReturn(response);
+
+        mockMvc
+                .perform(get(END_POINT + "/warehouse/drop-down-values")
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andDo(print())
+                .andReturn();
     }
 }

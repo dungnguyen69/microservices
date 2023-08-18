@@ -39,9 +39,9 @@ public interface DeviceService {
 
     public ResponseEntity<Object> importToDb(int ownerId, MultipartFile file) throws Exception;
 
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordDevices(int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
+    public ResponseEntity<Object> getSuggestKeywordDevices(int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<DropdownValuesResponse> getDropDownValues() throws InterruptedException, ExecutionException;
+    public DropdownValuesResponse getDropDownValues() throws InterruptedException, ExecutionException;
 
     public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordOwnedDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 

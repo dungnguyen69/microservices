@@ -335,23 +335,18 @@ public class DeviceServiceImp implements DeviceService {
                 .toArray(String[]::new);
         String[] itemTypeList = _itemTypeService
                 .getItemTypeList()
-                .get()
                 .toArray(String[]::new);
         String[] ramList = _ramService
                 .getRamList()
-                .get()
                 .toArray(String[]::new);
         String[] platformList = _platformService
                 .getPlatformNameVersionList()
-                .get()
                 .toArray(String[]::new);
         String[] screenList = _screenService
                 .getScreenList()
-                .get()
                 .toArray(String[]::new);
         String[] storageList = _storageService
                 .getStorageList()
-                .get()
                 .toArray(String[]::new);
         DropDownListsDTO dropDownListsDTO = new DropDownListsDTO();
         dropDownListsDTO.setStatusList(statusList);
@@ -420,43 +415,41 @@ public class DeviceServiceImp implements DeviceService {
         return new ResponseEntity<>(importDevice, NOT_FOUND);
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordDevices(int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> getSuggestKeywordDevices(int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
 
-        if(isKeywordInvalid(keyword)) return CompletableFuture.completedFuture(ResponseEntity
+        if(isKeywordInvalid(keyword)) return ResponseEntity
                 .status(NOT_FOUND)
-                .body("Keyword must be non-null"));
+                .body("Keyword must be non-null");
 
         List<Device> devices = _deviceRepository.findAll();
         List<DeviceDTO> deviceList = getAllDevices(devices, deviceFilter);
         Set<String> keywordList = selectColumnForKeywordSuggestion(deviceList, keyword, fieldColumn);
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
-        return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
+        return new ResponseEntity<>(response, OK);
     }
 
-    @Async
     @Override
-    public CompletableFuture<DropdownValuesResponse> getDropDownValues() throws InterruptedException, ExecutionException {
-        CompletableFuture<List<ItemTypeList>> itemTypeList = _itemTypeService.fetchItemTypes();
-        CompletableFuture<List<RamList>> ramList = _ramService.fetchRams();
-        CompletableFuture<List<PlatformList>> platformList = _platformService.fetchPlatform();
-        CompletableFuture<List<ScreenList>> screenList = _screenService.fetchScreen();
-        CompletableFuture<List<StorageList>> storageList = _storageService.fetchStorage();
+    public DropdownValuesResponse getDropDownValues() throws InterruptedException, ExecutionException {
+        List<ItemTypeList> itemTypeList = _itemTypeService.fetchItemTypes();
+        List<RamList> ramList = _ramService.fetchRams();
+        List<PlatformList> platformList = _platformService.fetchPlatform();
+        List<ScreenList> screenList = _screenService.fetchScreen();
+        List<StorageList> storageList = _storageService.fetchStorage();
         List<StatusList> statusList = getStatusList();
         List<ProjectList> projectList = getProjectList();
         List<OriginList> originList = getOriginList();
         DropdownValuesResponse response = new DropdownValuesResponse();
-        response.setItemTypeList(itemTypeList.get());
-        response.setRamList(ramList.get());
-        response.setPlatformList(platformList.get());
-        response.setScreenList(screenList.get());
-        response.setStorageList(storageList.get());
+        response.setItemTypeList(itemTypeList);
+        response.setRamList(ramList);
+        response.setPlatformList(platformList);
+        response.setScreenList(screenList);
+        response.setStorageList(storageList);
         response.setStatusList(statusList);
         response.setProjectList(projectList);
         response.setOriginList(originList);
-        return CompletableFuture.completedFuture(response);
+        return response;
     }
 
     @Async
@@ -1077,33 +1070,23 @@ public class DeviceServiceImp implements DeviceService {
     }
 
     private Boolean isItemTypeInvalid(int itemTypeId) throws ExecutionException, InterruptedException {
-        return !_itemTypeService
-                .doesItemTypeExist(itemTypeId)
-                .get();
+        return !_itemTypeService.doesItemTypeExist(itemTypeId);
     }
 
     private Boolean isRamInvalid(int ramId) throws ExecutionException, InterruptedException {
-        return !_ramService
-                .doesRamExist(ramId)
-                .get();
+        return !_ramService.doesRamExist(ramId);
     }
 
     private Boolean isStorageInvalid(int storageId) throws ExecutionException, InterruptedException {
-        return !_storageService
-                .doesStorageExist(storageId)
-                .get();
+        return !_storageService.doesStorageExist(storageId);
     }
 
     private Boolean isScreenInvalid(int screenId) throws ExecutionException, InterruptedException {
-        return !_screenService
-                .doesScreenExist(screenId)
-                .get();
+        return !_screenService.doesScreenExist(screenId);
     }
 
     private Boolean isPlatformInvalid(int platformId) throws ExecutionException, InterruptedException {
-        return !_platformService
-                .doesPlatformExist(platformId)
-                .get();
+        return !_platformService.doesPlatformExist(platformId);
     }
 
     private Boolean isStatusInvalid(int statusId) {
@@ -1464,13 +1447,10 @@ public class DeviceServiceImp implements DeviceService {
                     currentRow.getCell(DEVICE_SERIAL_NUMBER)), comments = String.valueOf(
                     currentRow.getCell(DEVICE_COMMENTS));
 
-            CompletableFuture<ItemType> itemType = _itemTypeService.findByName(
-                    String.valueOf(currentRow.getCell(DEVICE_ITEM_TYPE)));
-            CompletableFuture<Ram> ram = _ramService.findBySize(String.valueOf(currentRow.getCell(DEVICE_RAM)));
-            CompletableFuture<Screen> screen = _screenService.findBySize(
-                    String.valueOf(currentRow.getCell(DEVICE_SCREEN)));
-            CompletableFuture<Storage> storage = _storageService.findBySize(
-                    String.valueOf(currentRow.getCell(DEVICE_STORAGE)));
+            ItemType itemType = _itemTypeService.findByName(String.valueOf(currentRow.getCell(DEVICE_ITEM_TYPE)));
+            Ram ram = _ramService.findBySize(String.valueOf(currentRow.getCell(DEVICE_RAM)));
+            Screen screen = _screenService.findBySize(String.valueOf(currentRow.getCell(DEVICE_SCREEN)));
+            Storage storage = _storageService.findBySize(String.valueOf(currentRow.getCell(DEVICE_STORAGE)));
             User owner = findUserById(ownerId);
 
             String statusString = String.valueOf(currentRow.getCell(DEVICE_STATUS)), originString = String.valueOf(
@@ -1485,15 +1465,15 @@ public class DeviceServiceImp implements DeviceService {
                 continue;
             }
             String platformName = platformString[0].strip(), platformVersion = platformString[1].strip();
-            CompletableFuture<Platform> platform = _platformService.findByNameAndVersion(platformName, platformVersion);
-            if(platform.get() == null) errors.add("Platform at row " + rowInExcel + " is not valid");
+            Platform platform = _platformService.findByNameAndVersion(platformName, platformVersion);
+            if(platform == null) errors.add("Platform at row " + rowInExcel + " is not valid");
             if(name.isBlank()) errors.add("Name at row " + rowInExcel + " is not valid");
             if(inventoryNumber.isBlank()) errors.add("Inventory number at row " + rowInExcel + " is not valid");
             if(serialNumber.isBlank()) errors.add("Serial number at row " + rowInExcel + " is not valid");
-            if(ram.get() == null) errors.add("Ram at row " + rowInExcel + " is not valid");
-            if(itemType.get() == null) errors.add("Item type at row " + rowInExcel + " is not valid");
-            if(screen.get() == null) errors.add("Screen at row " + rowInExcel + " is not valid");
-            if(storage.get() == null) errors.add("Storage at row " + rowInExcel + " is not valid");
+            if(ram == null) errors.add("Ram at row " + rowInExcel + " is not valid");
+            if(itemType == null) errors.add("Item type at row " + rowInExcel + " is not valid");
+            if(screen == null) errors.add("Screen at row " + rowInExcel + " is not valid");
+            if(storage == null) errors.add("Storage at row " + rowInExcel + " is not valid");
             if(owner == null) errors.add("Owner at row " + rowInExcel + " is not valid");
             if(projectString.isBlank()) errors.add("Project at row " + rowInExcel + " is not valid");
             if(originString.isBlank()) errors.add("Origin at row " + rowInExcel + " is not valid");
@@ -1506,25 +1486,15 @@ public class DeviceServiceImp implements DeviceService {
                         .builder()
                         .name(name)
                         .status(Status.valueOf(statusString))
-                        .ramId(ram
-                                .get()
-                                .getId())
-                        .platformId(platform
-                                .get()
-                                .getId())
-                        .screenId(screen
-                                .get()
-                                .getId())
-                        .storageId(storage
-                                .get()
-                                .getId())
+                        .ramId(ram.getId())
+                        .platformId(platform.getId())
+                        .screenId(screen.getId())
+                        .storageId(storage.getId())
                         .ownerId(owner.getId())
                         .origin(Origin.valueOf(originString))
                         .project(Project.valueOf(projectString))
                         .comments(comments)
-                        .itemTypeId(itemType
-                                .get()
-                                .getId())
+                        .itemTypeId(itemType.getId())
                         .inventoryNumber(inventoryNumber)
                         .serialNumber(serialNumber)
                         .build();
@@ -1538,21 +1508,11 @@ public class DeviceServiceImp implements DeviceService {
             existDevice.setInventoryNumber(inventoryNumber);
             existDevice.setProject(Project.valueOf(projectString));
             existDevice.setOrigin(Origin.valueOf(originString));
-            existDevice.setPlatformId(platform
-                    .get()
-                    .getId());
-            existDevice.setRamId(ram
-                    .get()
-                    .getId());
-            existDevice.setItemTypeId(itemType
-                    .get()
-                    .getId());
-            existDevice.setStorageId(storage
-                    .get()
-                    .getId());
-            existDevice.setScreenId(screen
-                    .get()
-                    .getId());
+            existDevice.setPlatformId(platform.getId());
+            existDevice.setRamId(ram.getId());
+            existDevice.setItemTypeId(itemType.getId());
+            existDevice.setStorageId(storage.getId());
+            existDevice.setScreenId(screen.getId());
             existDevice.setComments(comments);
             existDevice.setOwnerId(owner.getId());
             existDevice.setUpdatedDate(new Date());

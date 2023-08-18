@@ -7,15 +7,15 @@ import com.fullstack.Backend.models.Platform;
 import com.fullstack.Backend.utils.dropdowns.PlatformList;
 
 public interface PlatformService {
-	public CompletableFuture<List<String>> getPlatformNameList();
+	public List<String> getPlatformNameList();
 
-	public CompletableFuture<List<String>> getPlatformVersionList();
+	public List<String> getPlatformVersionList();
 
-	public CompletableFuture<List<String>> getPlatformNameVersionList();
-	public CompletableFuture<Boolean> doesPlatformExist(int id);
+	public List<String> getPlatformNameVersionList();
+	public Boolean doesPlatformExist(int id);
 
-	public CompletableFuture<Platform> findByNameAndVersion(String name, String version);
+	public Platform findByNameAndVersion(String name, String version);
 
-	public CompletableFuture<List<PlatformList>> fetchPlatform();
+	public List<PlatformList> fetchPlatform();
 
 }

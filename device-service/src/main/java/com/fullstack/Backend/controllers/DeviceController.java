@@ -89,7 +89,7 @@ public class DeviceController {
     @CircuitBreaker(name = user, fallbackMethod = "fallbackMethodForResponseEntity")
     @TimeLimiter(name = user)
     @Retry(name = user)
-    public CompletableFuture<ResponseEntity<Object>> addANewDevice(@Valid @RequestBody AddDeviceDTO device) {
+    public CompletableFuture<ResponseEntity<Object>> addDevice(@Valid @RequestBody AddDeviceDTO device) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return _deviceService.addDevice(device);
@@ -101,7 +101,7 @@ public class DeviceController {
 
     @PutMapping("/warehouse/{id}")
     @ResponseBody
-//    @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MODERATOR') or hasRole('ADMIN')")
     @CircuitBreaker(name = user, fallbackMethod = "fallbackMethod")
     @TimeLimiter(name = user)
     @Retry(name = user)
@@ -118,7 +118,7 @@ public class DeviceController {
     @GetMapping("/warehouse/suggestion")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordDevices(@RequestParam(name = "column") int fieldColumn, @RequestParam(name = "keyword") String keyword, FilterDeviceDTO device) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> getSuggestKeywordDevices(@RequestParam(name = "column") int fieldColumn, @RequestParam(name = "keyword") String keyword, FilterDeviceDTO device) throws InterruptedException, ExecutionException {
         return _deviceService.getSuggestKeywordDevices(fieldColumn, keyword, device);
     }
 
@@ -170,7 +170,7 @@ public class DeviceController {
     @GetMapping("/warehouse/drop-down-values")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<DropdownValuesResponse> getDropdownValues() throws IOException, InterruptedException, ExecutionException {
+    public DropdownValuesResponse getDropdownValues() throws InterruptedException, ExecutionException {
         return _deviceService.getDropDownValues();
     }
 

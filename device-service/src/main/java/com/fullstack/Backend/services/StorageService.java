@@ -6,11 +6,11 @@ import com.fullstack.Backend.models.Storage;
 import com.fullstack.Backend.utils.dropdowns.StorageList;
 
 public interface StorageService {
-	public CompletableFuture<Storage> findBySize(String size);
-	public CompletableFuture<Boolean> doesStorageExist(int id);
+	public Storage findBySize(String size);
+	public Boolean doesStorageExist(int id);
 
-	public CompletableFuture<List<String>> getStorageList();
+	public List<String> getStorageList();
 	
-	public CompletableFuture<List<StorageList>> fetchStorage();
+	public List<StorageList> fetchStorage();
 
 }

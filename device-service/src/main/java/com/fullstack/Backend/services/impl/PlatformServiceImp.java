@@ -1,12 +1,9 @@
 package com.fullstack.Backend.services.impl;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.fullstack.Backend.models.Platform;
@@ -18,42 +15,38 @@ import com.fullstack.Backend.utils.dropdowns.PlatformList;
 @CacheConfig(cacheNames = {"platform"})
 public class PlatformServiceImp implements PlatformService {
 
-	@Autowired
+    @Autowired
     PlatformRepository _platformRepository;
 
-	@Async
-	@Override
-	public CompletableFuture<List<String>> getPlatformNameList() {
-		return CompletableFuture.completedFuture(_platformRepository.findPlatformName());
-	}
-	@Async
-	@Override
-	public CompletableFuture<List<String>> getPlatformVersionList() {
-		return CompletableFuture.completedFuture(_platformRepository.findPlatformVersion());
-	}
-	@Async
-	@Override
-	public CompletableFuture<List<String>> getPlatformNameVersionList() {
-		return CompletableFuture.completedFuture(_platformRepository.findPlatformNameVersion());
-	}
+    @Override
+    public List<String> getPlatformNameList() {
+        return _platformRepository.findPlatformName();
+    }
 
-	@Async
-	@Override
-	public CompletableFuture<Boolean> doesPlatformExist(int id) {
-		return CompletableFuture.completedFuture(_platformRepository.existsById((long) id));
-	}
+    @Override
+    public List<String> getPlatformVersionList() {
+        return _platformRepository.findPlatformVersion();
+    }
 
-	@Async
-	@Override
-	@Cacheable(key="{#name, #version}")
-	public CompletableFuture<Platform> findByNameAndVersion(String name, String version) {
-		return CompletableFuture.completedFuture(_platformRepository.findByNameAndVersion(name, version));
-	}
+    @Override
+    public List<String> getPlatformNameVersionList() {
+        return _platformRepository.findPlatformNameVersion();
+    }
 
-	@Async
-	@Override
-	public CompletableFuture<List<PlatformList>> fetchPlatform() {
-		return CompletableFuture.completedFuture(_platformRepository.fetchPlatform());
-	}
+    @Override
+    public Boolean doesPlatformExist(int id) {
+        return _platformRepository.existsById((long) id);
+    }
+
+    @Override
+    @Cacheable(key = "{#name, #version}")
+    public Platform findByNameAndVersion(String name, String version) {
+        return _platformRepository.findByNameAndVersion(name, version);
+    }
+
+    @Override
+    public List<PlatformList> fetchPlatform() {
+        return _platformRepository.fetchPlatform();
+    }
 
 }
