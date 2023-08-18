@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /*https://thepracticaldeveloper.com/guide-spring-boot-controller-tests/#strategy-1-spring-mockmvc-example-in-standalone-mode*/
 @ExtendWith(MockitoExtension.class)
-public class DeviceApiControllerTest {
+public class DeviceControllerTest {
     private static final String END_POINT = "/api/devices";
 
     private MockMvc mockMvc;
@@ -61,7 +61,7 @@ public class DeviceApiControllerTest {
             .withDefaultPrettyPrinter();
     private final MediaType MEDIA_TYPE_JSON_UTF8 = new MediaType("application", "json", StandardCharsets.UTF_8);
 
-    final static Logger logger = LoggerFactory.getLogger(DeviceApiControllerTest.class);
+    final static Logger logger = LoggerFactory.getLogger(DeviceControllerTest.class);
     @Mock
     private DeviceService deviceService;
 
@@ -70,7 +70,7 @@ public class DeviceApiControllerTest {
 
     private final DeviceMapper deviceMapper = new DeviceMapperImp();
 
-    public DeviceApiControllerTest() {
+    public DeviceControllerTest() {
     }
 
     @Before
