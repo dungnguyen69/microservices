@@ -18,8 +18,6 @@ public interface KeeperOrderService {
     public void update(KeeperOrder keeperOrder)
             throws InterruptedException, ExecutionException;
 
-    public List<KeeperOrder> getAllKeeperOrders();
-
     public List<KeeperOrder> findByKeeperId(int keeperId);
 
     public void deleteReturnedDevice(int deviceId);
