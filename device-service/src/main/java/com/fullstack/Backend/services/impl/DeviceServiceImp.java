@@ -452,10 +452,9 @@ public class DeviceServiceImp implements DeviceService {
         return response;
     }
 
-    @Async
     @Override
     @Transactional
-    public CompletableFuture<ResponseEntity<Object>> updateReturnKeepDevice(ReturnKeepDeviceDTO input) throws ExecutionException, InterruptedException, ParseException {
+    public ResponseEntity<Object> updateReturnKeepDevice(ReturnKeepDeviceDTO input) throws ExecutionException, InterruptedException, ParseException {
         /*  No 1: B borrowed A's from 1/6 - 1/10
          *  No 2: C borrowed B's from 1/7 - 1/9
          *  No 3: D borrowed C's from 1/8 - 15/8
@@ -478,7 +477,7 @@ public class DeviceServiceImp implements DeviceService {
                 .toList();
 
         if(keeperOrderReturnList.size() == 0)
-            return CompletableFuture.completedFuture(new ResponseEntity<>(response, NOT_FOUND));
+            return new ResponseEntity<>(response, NOT_FOUND);
 
         for (KeeperOrder keeperOrder : keeperOrderReturnList) {
             Request occupiedRequest = findAnOccupiedRequest(keeperOrder
@@ -494,10 +493,9 @@ public class DeviceServiceImp implements DeviceService {
             updateRequest(occupiedRequest);
             updateKeeper(keeperOrder);
         }
-
         response.setKeepDeviceReturned(true);
         response.setOldKeepers(oldKeepers);
-        return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
+        return new ResponseEntity<>(response, OK);
     }
 
     @Async

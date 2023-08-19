@@ -7,6 +7,7 @@ import com.fullstack.Backend.dto.device.DeviceDTO;
 import com.fullstack.Backend.dto.device.FilterDeviceDTO;
 import com.fullstack.Backend.dto.device.UpdateDeviceDTO;
 import com.fullstack.Backend.dto.keeper_order.KeeperOrderListDTO;
+import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
 import com.fullstack.Backend.enums.Origin;
 import com.fullstack.Backend.enums.Project;
 import com.fullstack.Backend.enums.Status;
@@ -38,13 +39,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.fullstack.Backend.constant.constant.RETURNED;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.*;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -466,6 +467,37 @@ public class DeviceControllerTest {
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pageNo", Matchers.is(1)))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Should Return Keep Device for Previous Keeper When making PUT request to endpoint: /api/devices/keepers/return")
+    public void shouldUpdateReturnKeepDevice() throws Exception {
+        ReturnDeviceResponse response = new ReturnDeviceResponse();
+        List<String> oldKeepers = new ArrayList<>();
+        oldKeepers.add("admin");
+        response.setKeepDeviceReturned(true);
+        response.setOldKeepers(oldKeepers);
+        ReturnKeepDeviceDTO dto = new ReturnKeepDeviceDTO(1, 1, 1);
+        when(deviceService.updateReturnKeepDevice(refEq(dto))).thenReturn(new ResponseEntity<>(response, OK));
+
+        String requestURI = END_POINT + "/keepers/return";
+        String requestBody = ow.writeValueAsString(dto);
+        MvcResult mvcResult = mockMvc
+                .perform(put(requestURI)
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .content(requestBody)
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andExpect(request().asyncStarted())
+                .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
+                .andDo(print())
+                .andReturn();
+
+        mockMvc
+                .perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.keepDeviceReturned", Matchers.is(true)))
                 .andDo(print());
     }
 

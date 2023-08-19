@@ -1,7 +1,9 @@
 package com.fullstack.Backend.models;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
@@ -9,8 +11,20 @@ import java.util.Date;
 @Getter
 @Setter
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "keeper_order")
 public class KeeperOrder extends BaseEntity {
+    public KeeperOrder(int Id, Date createdDate, Date updatedDate,  int device_Id, int keeper_Id, int keeperNo, Boolean isReturned, Date bookingDate, Date dueDate) {
+        super(Id, createdDate, updatedDate);
+        this.device_Id = device_Id;
+        this.keeper_Id = keeper_Id;
+        this.keeperNo = keeperNo;
+        this.isReturned = isReturned;
+        this.bookingDate = bookingDate;
+        this.dueDate = dueDate;
+    }
+
     @OneToOne
     @JoinColumn(name = "device_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "device_Id_FK"))
     private Device device;
