@@ -1,11 +1,10 @@
 package com.fullstack.Backend;
 
+import java.util.Date;
+
 import com.fasterxml.jackson.databind.*;
 import com.fullstack.Backend.controllers.DeviceController;
-import com.fullstack.Backend.dto.device.AddDeviceDTO;
-import com.fullstack.Backend.dto.device.DeviceDTO;
-import com.fullstack.Backend.dto.device.FilterDeviceDTO;
-import com.fullstack.Backend.dto.device.UpdateDeviceDTO;
+import com.fullstack.Backend.dto.device.*;
 import com.fullstack.Backend.dto.keeper_order.KeeperOrderListDTO;
 import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
 import com.fullstack.Backend.enums.Origin;
@@ -532,4 +531,63 @@ public class DeviceControllerTest {
                 .andDo(print());
     }
 
+    @Test
+    @DisplayName("Should Show List of Devices of Keeper When making GET request to endpoint: /api/devices/keepers/{id}")
+    public void shouldShowDevicesOfKeeper() throws Exception {
+        int ownerId = 1;
+        KeepingDeviceDTO dto = new KeepingDeviceDTO();
+        dto.setId(ownerId);
+        dto.setDeviceName("Iphone X");
+        dto.setStatus("OCCUPIED");
+        dto.setItemType("Smart Phone");
+        dto.setPlatformName("IOS");
+        dto.setPlatformVersion("13");
+        dto.setRamSize("16 GB");
+        dto.setScreenSize("10.5 cm");
+        dto.setStorageSize("512 GB");
+        dto.setInventoryNumber("123GBA");
+        dto.setSerialNumber("56TUQ");
+        dto.setComments("");
+        dto.setProject("Telsa");
+        dto.setOrigin("EXTERNAL");
+        dto.setOwner("ADMIN");
+        dto.setKeeper("USER");
+        dto.setKeeperNo(1);
+        dto.setBookingDate(new Date());
+        dto.setReturnDate(new Date());
+        dto.setMaxExtendingReturnDate(new Date());
+        dto.setIsReturnable(false);
+        dto.setCreatedDate(new Date());
+        dto.setUpdatedDate(new Date());
+
+        KeepingDeviceResponse response = new KeepingDeviceResponse(List.of(dto), statusList, originList, projectList,
+                itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
+
+        when(deviceService.showKeepingDevicesWithPaging(eq(ownerId), eq(1), eq(2),
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(response, OK));
+
+        String requestURI = END_POINT + "/keepers/" + ownerId + "?pageNo=1&pageSize=2";
+        this.mockMvc
+                .perform(get(requestURI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .characterEncoding("utf-8"))
+                .andDo(print());
+
+        MvcResult mvcResult = mockMvc
+                .perform(get(requestURI)
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andExpect(request().asyncStarted())
+                .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
+                .andDo(print())
+                .andReturn();
+
+        mockMvc
+                .perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pageNo", Matchers.is(1)))
+                .andDo(print());
+    }
 }

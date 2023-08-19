@@ -2,11 +2,15 @@ package com.fullstack.Backend.dto.device;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fullstack.Backend.models.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class KeepingDeviceDTO {
     @JsonProperty("Id")
     public int Id;
