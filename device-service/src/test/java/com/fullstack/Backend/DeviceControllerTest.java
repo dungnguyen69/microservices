@@ -15,6 +15,7 @@ import com.fullstack.Backend.mappers.DeviceMapperImp;
 import com.fullstack.Backend.models.Device;
 import com.fullstack.Backend.responses.device.*;
 import com.fullstack.Backend.services.DeviceService;
+import com.fullstack.Backend.utils.ErrorMessage;
 import com.fullstack.Backend.utils.dropdowns.*;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,7 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.fullstack.Backend.constant.constant.RETURNED;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.mockito.ArgumentMatchers.eq;
@@ -60,31 +60,23 @@ public class DeviceControllerTest {
             .writer()
             .withDefaultPrettyPrinter();
     private final MediaType MEDIA_TYPE_JSON_UTF8 = new MediaType("application", "json", StandardCharsets.UTF_8);
-
     @Mock
     private DeviceService deviceService;
-
     @InjectMocks
     private DeviceController deviceController;
-
     private final DeviceMapper deviceMapper = new DeviceMapperImp();
 
     private Device device;
-
-    private DeviceDTO mockDevice1;
-
-    private DeviceDTO mockDevice2;
-
     private List<DeviceDTO> deviceList;
-
     private List<String> statusList;
-
     private List<String> keeperNumberOptions;
     private List<String> projectList;
-
     private List<String> itemTypeList;
-
     private List<String> originList;
+    private int ownerId;
+    private HashSet<String> keywordList;
+    private KeywordSuggestionResponse keywordSuggestionResponse;
+    private FilterDeviceDTO filterDeviceDTO;
 
     @BeforeEach
     public void setup() {
@@ -92,6 +84,8 @@ public class DeviceControllerTest {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(deviceController)
                 .build();
+        keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
+        ownerId = 1;
         device = Device
                 .builder()
                 .name("Air pod")
@@ -108,7 +102,7 @@ public class DeviceControllerTest {
                 .project(Project.BMW)
                 .comments(null)
                 .build();
-        mockDevice1 = DeviceDTO
+        DeviceDTO mockDevice1 = DeviceDTO
                 .builder()
                 .Id(1)
                 .DeviceName("Air pal")
@@ -131,7 +125,7 @@ public class DeviceControllerTest {
                 .CreatedDate(null)
                 .UpdatedDate(null)
                 .build();
-        mockDevice2 = DeviceDTO
+        DeviceDTO mockDevice2 = DeviceDTO
                 .builder()
                 .Id(2)
                 .DeviceName("Air pal")
@@ -176,6 +170,9 @@ public class DeviceControllerTest {
                 .distinct()
                 .collect(Collectors.toList());
         keeperNumberOptions = List.of(new String[]{"LESS THAN 3", "EQUAL TO 3"});
+        keywordSuggestionResponse = new KeywordSuggestionResponse();
+        filterDeviceDTO = new FilterDeviceDTO();
+        keywordSuggestionResponse.setKeywordList(keywordList);
     }
 
     @Test
@@ -206,7 +203,7 @@ public class DeviceControllerTest {
                 .deviceName("Air pod")
                 .statusId(2)
                 .platformId(1)
-                .itemTypeId(21)
+                .itemTypeId(21) //Incorrect value
                 .ramId(3)
                 .screenId(1)
                 .storageId(1)
@@ -217,9 +214,8 @@ public class DeviceControllerTest {
                 .projectId(1)
                 .comments(null)
                 .build();
-
-        when(deviceService.addDevice(refEq(newDevice))).thenReturn(
-                new ResponseEntity<>(Mockito.any(ArrayList.class), BAD_REQUEST));
+        List<ErrorMessage> errors = new ArrayList<>();
+        when(deviceService.addDevice(refEq(newDevice))).thenReturn(new ResponseEntity<>(errors, BAD_REQUEST));
         String requestBody = ow.writeValueAsString(newDevice);
 
         MvcResult mvcResult = mockMvc
@@ -370,20 +366,16 @@ public class DeviceControllerTest {
     @Test
     @DisplayName("Should Retrieve List of Keywords When making GET request to endpoint: /api/devices/warehouse/suggestion")
     public void shouldSuggestKeywordDevices() throws Exception {
-        Set<String> keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
-        KeywordSuggestionResponse response = new KeywordSuggestionResponse();
-        FilterDeviceDTO dto = new FilterDeviceDTO();
-        response.setKeywordList(keywordList);
 
         when(deviceService.getSuggestKeywordDevices(eq(0), eq("a"), Mockito.any(FilterDeviceDTO.class))).thenReturn(
-                new ResponseEntity<>(response, OK));
+                new ResponseEntity<>(keywordSuggestionResponse, OK));
 
         mockMvc
                 .perform(get(END_POINT + "/warehouse/suggestion")
                         .contentType(MEDIA_TYPE_JSON_UTF8)
                         .param("column", String.valueOf(0))
                         .param("keyword", "a")
-                        .param("device", String.valueOf(dto))
+                        .param("device", String.valueOf(filterDeviceDTO))
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
                 .andDo(print())
@@ -437,7 +429,6 @@ public class DeviceControllerTest {
     @Test
     @DisplayName("Should Show List of Devices of Owner When making GET request to endpoint: /api/devices/owners/{id}")
     public void shouldShowDevicesOfOwner() throws Exception {
-        int ownerId = 1;
         OwnedDeviceResponse response = new OwnedDeviceResponse(deviceList, statusList, originList, projectList,
                 itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
@@ -534,7 +525,6 @@ public class DeviceControllerTest {
     @Test
     @DisplayName("Should Show List of Devices of Keeper When making GET request to endpoint: /api/devices/keepers/{id}")
     public void shouldShowDevicesOfKeeper() throws Exception {
-        int ownerId = 1;
         KeepingDeviceDTO dto = new KeepingDeviceDTO();
         dto.setId(ownerId);
         dto.setDeviceName("Iphone X");
@@ -590,4 +580,24 @@ public class DeviceControllerTest {
                 .andExpect(jsonPath("$.pageNo", Matchers.is(1)))
                 .andDo(print());
     }
+
+    @Test
+    @DisplayName("Should Retrieve List of Keywords for Owner When making GET request to endpoint: /api/devices/owners/suggestion/{id}")
+    public void shouldSuggestKeywordDevicesForOwner() throws Exception {
+
+        when(deviceService.getSuggestKeywordOwnedDevices(eq(ownerId), eq(0), eq("a"),
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(keywordSuggestionResponse, OK));
+
+        mockMvc
+                .perform(get(END_POINT + "/owners/suggestion/" + ownerId)
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .param("column", String.valueOf(0))
+                        .param("keyword", "a")
+                        .param("device", String.valueOf(filterDeviceDTO))
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andDo(print())
+                .andReturn();
+    }
+
 }

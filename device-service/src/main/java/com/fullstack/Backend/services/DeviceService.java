@@ -43,7 +43,7 @@ public interface DeviceService {
 
     public DropdownValuesResponse getDropDownValues() throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordOwnedDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
+    public ResponseEntity<Object> getSuggestKeywordOwnedDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 
     public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 

@@ -645,19 +645,18 @@ public class DeviceServiceImp implements DeviceService {
         return new ResponseEntity<>(response, OK);
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordOwnedDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
-        if(isKeywordInvalid(keyword)) return CompletableFuture.completedFuture(ResponseEntity
+    public ResponseEntity<Object> getSuggestKeywordOwnedDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
+        if(isKeywordInvalid(keyword)) return ResponseEntity
                 .status(NOT_FOUND)
-                .body("Keyword must be non-null"));
+                .body("Keyword must be non-null");
 
         List<DeviceDTO> deviceList = getDevicesOfOwner(ownerId, deviceFilter, "id", "asc");
         Set<String> keywordList = selectColumnForKeywordSuggestion(deviceList, keyword, fieldColumn);
 
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
-        return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
+        return new ResponseEntity<>(response, OK);
     }
 
     @Async
