@@ -95,7 +95,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Show List of Devices using Pagination")
+    @DisplayName("Should Show List of Devices using Pagination When making GET request to endpoint: /api/devices/warehouse")
     public void shouldShowDevicesWithPagination() throws Exception {
         DeviceDTO mockDevice1 = DeviceDTO
                 .builder()
@@ -183,7 +183,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Fail When Add Invalid Device")
+    @DisplayName("Should Fail When Add Invalid Device When making POST request to endpoint: /api/devices/warehouse")
     public void shouldReturnBadRequestWhenAddDevice() throws Exception {
         AddDeviceDTO newDevice = AddDeviceDTO
                 .builder()
@@ -222,7 +222,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Add Device")
+    @DisplayName("Should Add Device When making POST request to endpoint: /api/devices/warehouse")
     public void shouldReturn200WhenAddDevice() throws Exception {
         AddDeviceDTO newDevice = AddDeviceDTO
                 .builder()
@@ -260,7 +260,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Update Device")
+    @DisplayName("Should Retrieve Detail Device When making GET request to endpoint: /api/devices/warehouse/{id}")
     public void shouldGetDetailDevice() throws Exception {
         int deviceId = 0;
         DetailDeviceResponse response = new DetailDeviceResponse();
@@ -291,7 +291,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Update Device")
+    @DisplayName("Should Update Device When making PUT request to endpoint: /api/devices/warehouse/{id}")
     public void shouldReturn200WhenUpdateDevice() throws Exception {
         int deviceId = 0;
         device.setCreatedDate(new Date());
@@ -338,7 +338,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Delete Device Successfully")
+    @DisplayName("Should Delete Device Successfully When making DELETE request to endpoint: /api/devices/warehouse/{id}")
     public void shouldReturn200WhenDeleteDevice() throws Exception {
         int deviceId = 0;
         DeleteDeviceResponse response = new DeleteDeviceResponse();
@@ -352,7 +352,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Retrieve List of Keywords")
+    @DisplayName("Should Retrieve List of Keywords When making GET request to endpoint: /api/devices/warehouse/suggestion")
     public void shouldSuggestKeywordDevices() throws Exception {
         Set<String> keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
@@ -375,7 +375,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Return Drop-down Values")
+    @DisplayName("Should Return Drop-down Values When making GET request to endpoint: /api/devices/warehouse/drop-down-values")
     public void shouldReturnDropdownValues() throws Exception {
         ProjectionFactory factory = new SpelAwareProxyProjectionFactory();
         PlatformList platform = factory.createProjection(PlatformList.class);
