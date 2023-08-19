@@ -68,7 +68,12 @@
 			<artifactId>mockito-junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.testinfected.hamcrest-matchers</groupId>
+            <artifactId>hamcrest-matchers</artifactId>
+            <version>1.8</version>
+        </dependency>
+    </dependencies>
 
 	<dependencyManagement>
 		<dependencies>

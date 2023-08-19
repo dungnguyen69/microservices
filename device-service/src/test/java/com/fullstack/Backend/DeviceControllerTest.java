@@ -6,27 +6,26 @@ import com.fullstack.Backend.dto.device.AddDeviceDTO;
 import com.fullstack.Backend.dto.device.DeviceDTO;
 import com.fullstack.Backend.dto.device.FilterDeviceDTO;
 import com.fullstack.Backend.dto.device.UpdateDeviceDTO;
+import com.fullstack.Backend.dto.keeper_order.KeeperOrderListDTO;
 import com.fullstack.Backend.enums.Origin;
 import com.fullstack.Backend.enums.Project;
 import com.fullstack.Backend.enums.Status;
 import com.fullstack.Backend.mappers.DeviceMapper;
 import com.fullstack.Backend.mappers.DeviceMapperImp;
 import com.fullstack.Backend.models.Device;
-import com.fullstack.Backend.models.Storage;
 import com.fullstack.Backend.responses.device.*;
 import com.fullstack.Backend.services.DeviceService;
 import com.fullstack.Backend.utils.dropdowns.*;
-import org.junit.Before;
-import org.junit.Test;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 import org.springframework.http.MediaType;
@@ -34,12 +33,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.*;
@@ -61,7 +60,6 @@ public class DeviceControllerTest {
             .withDefaultPrettyPrinter();
     private final MediaType MEDIA_TYPE_JSON_UTF8 = new MediaType("application", "json", StandardCharsets.UTF_8);
 
-    final static Logger logger = LoggerFactory.getLogger(DeviceControllerTest.class);
     @Mock
     private DeviceService deviceService;
 
@@ -70,14 +68,29 @@ public class DeviceControllerTest {
 
     private final DeviceMapper deviceMapper = new DeviceMapperImp();
 
-    public DeviceControllerTest() {
-    }
+    private Device device;
 
-    @Before
+    @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(deviceController)
+                .build();
+        device = Device
+                .builder()
+                .name("Air pod")
+                .status(Status.VACANT)
+                .platformId(2)
+                .itemTypeId(2)
+                .ramId(3)
+                .screenId(1)
+                .storageId(1)
+                .ownerId(1)
+                .inventoryNumber("ABC1b4")
+                .serialNumber("12345XT")
+                .origin(Origin.External)
+                .project(Project.BMW)
+                .comments(null)
                 .build();
     }
 
@@ -164,7 +177,9 @@ public class DeviceControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .characterEncoding("utf-8"))
-                .andDo(print());
+                .andDo(print())
+                .andExpect(jsonPath("$.pageSize", Matchers.is(2)))
+                .andExpect(jsonPath("$.pageNo", Matchers.is(1)));
     }
 
     @Test
@@ -225,12 +240,10 @@ public class DeviceControllerTest {
                 .projectId(1)
                 .comments(null)
                 .build();
-
         Device device = deviceMapper.addDeviceDtoToDevice(newDevice);
         AddDeviceResponse addDeviceResponse = new AddDeviceResponse(device, true);
         when(deviceService.addDevice(refEq(newDevice))).thenReturn(ResponseEntity.ok(addDeviceResponse));
         String requestBody = ow.writeValueAsString(newDevice);
-
         MvcResult mvcResult = mockMvc
                 .perform(post(END_POINT + "/warehouse")
                         .contentType(MEDIA_TYPE_JSON_UTF8)
@@ -239,10 +252,41 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andDo(print())
                 .andReturn();
-
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
+                .andDo(print())
+                .andExpect(jsonPath("$.isAddedSuccessful", Matchers.is(true)));
+    }
+
+    @Test
+    @DisplayName("Should Update Device")
+    public void shouldGetDetailDevice() throws Exception {
+        int deviceId = 0;
+        DetailDeviceResponse response = new DetailDeviceResponse();
+        device.setCreatedDate(new Date());
+        device.setId(deviceId);
+        KeeperOrderListDTO keeperOrderListDTO = new KeeperOrderListDTO("admin", 1, new Date(), new Date());
+        List<KeeperOrderListDTO> showKeeperList = List.of(keeperOrderListDTO);
+        UpdateDeviceDTO dto = new UpdateDeviceDTO();
+        dto.loadFromEntity(device, showKeeperList);
+        response.setDetailDevice(dto);
+        when(deviceService.getDetailDevice(eq(deviceId))).thenReturn(response);
+        String requestBody = ow.writeValueAsString(dto);
+        MvcResult mvcResult = mockMvc
+                .perform(get(END_POINT + "/warehouse/" + deviceId)
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .content(requestBody)
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andExpect(request().asyncStarted())
+                .andExpect(request().asyncResult(instanceOf(DetailDeviceResponse.class)))
+                .andDo(print())
+                .andReturn();
+        mockMvc
+                .perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.detailDevice.id", Matchers.is(0)))
                 .andDo(print());
     }
 
@@ -250,22 +294,6 @@ public class DeviceControllerTest {
     @DisplayName("Should Update Device")
     public void shouldReturn200WhenUpdateDevice() throws Exception {
         int deviceId = 0;
-        Device device = Device
-                .builder()
-                .name("Air pod")
-                .status(Status.VACANT)
-                .platformId(2)
-                .itemTypeId(2)
-                .ramId(3)
-                .screenId(1)
-                .storageId(1)
-                .ownerId(1)
-                .inventoryNumber("ABC1b4")
-                .serialNumber("12345XT")
-                .origin(Origin.External)
-                .project(Project.BMW)
-                .comments(null)
-                .build();
         device.setCreatedDate(new Date());
         device.setId(deviceId);
         UpdateDeviceDTO dto = UpdateDeviceDTO
@@ -291,20 +319,22 @@ public class DeviceControllerTest {
         when(deviceService.updateDevice(eq(deviceId), refEq(dto))).thenReturn(response);
         String requestBody = ow.writeValueAsString(dto);
 
-        logger.info("Response: {}", requestBody);
         MvcResult mvcResult = mockMvc
                 .perform(put(END_POINT + "/warehouse/" + deviceId)
                         .contentType(MEDIA_TYPE_JSON_UTF8)
                         .content(requestBody)
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
+                .andExpect(request().asyncStarted())
+                .andExpect(request().asyncResult(instanceOf(UpdateDeviceResponse.class)))
                 .andDo(print())
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andDo(print());
+                .andDo(print())
+                .andExpect(jsonPath("$.errors", Matchers.is(nullValue())));
     }
 
     @Test
