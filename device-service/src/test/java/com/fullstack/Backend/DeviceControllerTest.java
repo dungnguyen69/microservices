@@ -600,4 +600,22 @@ public class DeviceControllerTest {
                 .andReturn();
     }
 
+    @Test
+    @DisplayName("Should Retrieve List of Keywords for Keeper When making GET request to endpoint: /api/devices/keepers/suggestion/{id}")
+    public void shouldSuggestKeywordDevicesForKeeper() throws Exception {
+
+        when(deviceService.getSuggestKeywordKeepingDevices(eq(ownerId), eq(0), eq("a"),
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(keywordSuggestionResponse, OK));
+
+        mockMvc
+                .perform(get(END_POINT + "/keepers/suggestion/" + ownerId)
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .param("column", String.valueOf(0))
+                        .param("keyword", "a")
+                        .param("device", String.valueOf(filterDeviceDTO))
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andDo(print())
+                .andReturn();
+    }
 }

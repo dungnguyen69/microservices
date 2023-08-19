@@ -476,8 +476,7 @@ public class DeviceServiceImp implements DeviceService {
                 .filter(ko -> ko.getKeeperNo() > input.getKeeperNo())
                 .toList();
 
-        if(keeperOrderReturnList.size() == 0)
-            return new ResponseEntity<>(response, NOT_FOUND);
+        if(keeperOrderReturnList.size() == 0) return new ResponseEntity<>(response, NOT_FOUND);
 
         for (KeeperOrder keeperOrder : keeperOrderReturnList) {
             Request occupiedRequest = findAnOccupiedRequest(keeperOrder
@@ -517,8 +516,7 @@ public class DeviceServiceImp implements DeviceService {
         List<KeeperOrder> keeperOrderReturnList = Arrays.asList(getListByDeviceId(input.getDeviceId()));
         ReturnDeviceResponse response = new ReturnDeviceResponse();
 
-        if(keeperOrderReturnList.size() == 0)
-            return new ResponseEntity<>(response, NOT_FOUND);
+        if(keeperOrderReturnList.size() == 0) return new ResponseEntity<>(response, NOT_FOUND);
 
         List<String> oldKeepers = new ArrayList<>();
         for (KeeperOrder keeperOrder : keeperOrderReturnList) {
@@ -659,19 +657,18 @@ public class DeviceServiceImp implements DeviceService {
         return new ResponseEntity<>(response, OK);
     }
 
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
-        if(isKeywordInvalid(keyword)) return CompletableFuture.completedFuture(ResponseEntity
+    public ResponseEntity<Object> getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
+        if(isKeywordInvalid(keyword)) return ResponseEntity
                 .status(NOT_FOUND)
-                .body("Keyword must be non-null"));
+                .body("Keyword must be non-null");
 
         List<KeepingDeviceDTO> deviceList = getDevicesOfKeeper(keeperId, deviceFilter);
         Set<String> keywordList = selectColumnForKeepingDevicesKeywordSuggestion(deviceList, keyword, fieldColumn);
 
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
-        return CompletableFuture.completedFuture(new ResponseEntity<>(response, OK));
+        return new ResponseEntity<>(response, OK);
     }
 
     private List<DeviceDTO> getAllDevices(List<Device> devices, FilterDeviceDTO deviceFilter) throws ExecutionException, InterruptedException {

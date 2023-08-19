@@ -249,7 +249,7 @@ public class DeviceController {
     @GetMapping("/keepers/suggestion/{id}")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordKeepingDevices(@PathVariable(value = "id") int keeperId, @RequestParam(name = "column") int fieldColumn, @RequestParam(name = "keyword") String keyword, FilterDeviceDTO device) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> getSuggestKeywordKeepingDevices(@PathVariable(value = "id") int keeperId, @RequestParam(name = "column") int fieldColumn, @RequestParam(name = "keyword") String keyword, FilterDeviceDTO device) throws InterruptedException, ExecutionException {
         return _deviceService.getSuggestKeywordKeepingDevices(keeperId, fieldColumn, keyword, device);
     }
 }

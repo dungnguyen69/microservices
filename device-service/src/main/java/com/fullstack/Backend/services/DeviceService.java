@@ -45,7 +45,7 @@ public interface DeviceService {
 
     public ResponseEntity<Object> getSuggestKeywordOwnedDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 
-    public CompletableFuture<ResponseEntity<Object>> getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
+    public ResponseEntity<Object> getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO dto) throws InterruptedException, ExecutionException;
 
     public ResponseEntity<Object> updateReturnKeepDevice(ReturnKeepDeviceDTO request) throws ExecutionException, InterruptedException, ParseException;
 
