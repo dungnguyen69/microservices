@@ -226,8 +226,17 @@ public class DeviceController {
     @PutMapping("/owners/return")
     @ResponseBody
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public CompletableFuture<ResponseEntity<Object>> updateReturnOwnedDevice(@RequestBody ReturnKeepDeviceDTO request) throws InterruptedException, ExecutionException, ParseException {
-        return _deviceService.updateReturnOwnedDevice(request);
+    @CircuitBreaker(name = user, fallbackMethod = "fallbackMethodForResponseEntity")
+    @TimeLimiter(name = user)
+    @Retry(name = user)
+    public CompletableFuture<ResponseEntity<Object>> updateReturnOwnedDevice(@RequestBody ReturnKeepDeviceDTO request) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return _deviceService.updateReturnOwnedDevice(request);
+            } catch (InterruptedException | ExecutionException | ParseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @GetMapping("/owners/suggestion/{id}")

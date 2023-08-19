@@ -471,7 +471,7 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Return Keep Device for Previous Keeper When making PUT request to endpoint: /api/devices/keepers/return")
+    @DisplayName("Should Return Device for Previous Keeper When making PUT request to endpoint: /api/devices/keepers/return")
     public void shouldUpdateReturnKeepDevice() throws Exception {
         ReturnDeviceResponse response = new ReturnDeviceResponse();
         List<String> oldKeepers = new ArrayList<>();
@@ -482,6 +482,37 @@ public class DeviceControllerTest {
         when(deviceService.updateReturnKeepDevice(refEq(dto))).thenReturn(new ResponseEntity<>(response, OK));
 
         String requestURI = END_POINT + "/keepers/return";
+        String requestBody = ow.writeValueAsString(dto);
+        MvcResult mvcResult = mockMvc
+                .perform(put(requestURI)
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .content(requestBody)
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andExpect(request().asyncStarted())
+                .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
+                .andDo(print())
+                .andReturn();
+
+        mockMvc
+                .perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.keepDeviceReturned", Matchers.is(true)))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Should Return Device for The Owner When making PUT request to endpoint: /api/devices/owners/return")
+    public void shouldUpdateOwnedKeepDevice() throws Exception {
+        ReturnDeviceResponse response = new ReturnDeviceResponse();
+        List<String> oldKeepers = new ArrayList<>();
+        oldKeepers.add("admin");
+        response.setKeepDeviceReturned(true);
+        response.setOldKeepers(oldKeepers);
+        ReturnKeepDeviceDTO dto = new ReturnKeepDeviceDTO(1, 1, 1);
+        when(deviceService.updateReturnOwnedDevice(refEq(dto))).thenReturn(new ResponseEntity<>(response, OK));
+
+        String requestURI = END_POINT + "/owners/return";
         String requestBody = ow.writeValueAsString(dto);
         MvcResult mvcResult = mockMvc
                 .perform(put(requestURI)
