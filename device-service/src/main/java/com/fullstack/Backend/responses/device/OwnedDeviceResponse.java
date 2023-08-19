@@ -1,12 +1,16 @@
 package com.fullstack.Backend.responses.device;
 
 import com.fullstack.Backend.dto.device.DeviceDTO;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.util.List;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class OwnedDeviceResponse {
     private List<DeviceDTO> devicesList;
     private List<String> statusList;

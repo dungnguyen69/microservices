@@ -33,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -70,6 +71,21 @@ public class DeviceControllerTest {
 
     private Device device;
 
+    private DeviceDTO mockDevice1;
+
+    private DeviceDTO mockDevice2;
+
+    private List<DeviceDTO> deviceList;
+
+    private List<String> statusList;
+
+    private List<String> keeperNumberOptions;
+    private List<String> projectList;
+
+    private List<String> itemTypeList;
+
+    private List<String> originList;
+
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
@@ -92,12 +108,7 @@ public class DeviceControllerTest {
                 .project(Project.BMW)
                 .comments(null)
                 .build();
-    }
-
-    @Test
-    @DisplayName("Should Show List of Devices using Pagination When making GET request to endpoint: /api/devices/warehouse")
-    public void shouldShowDevicesWithPagination() throws Exception {
-        DeviceDTO mockDevice1 = DeviceDTO
+        mockDevice1 = DeviceDTO
                 .builder()
                 .Id(1)
                 .DeviceName("Air pal")
@@ -120,7 +131,7 @@ public class DeviceControllerTest {
                 .CreatedDate(null)
                 .UpdatedDate(null)
                 .build();
-        DeviceDTO mockDevice2 = DeviceDTO
+        mockDevice2 = DeviceDTO
                 .builder()
                 .Id(2)
                 .DeviceName("Air pal")
@@ -143,28 +154,33 @@ public class DeviceControllerTest {
                 .CreatedDate(null)
                 .UpdatedDate(null)
                 .build();
-        List<DeviceDTO> deviceList = List.of(mockDevice1, mockDevice2);
-        List<String> statusList = deviceList
+        deviceList = List.of(mockDevice1, mockDevice2);
+        statusList = deviceList
                 .stream()
                 .map(DeviceDTO::getStatus)
                 .distinct()
                 .collect(Collectors.toList());
-        List<String> originList = deviceList
+        originList = deviceList
                 .stream()
                 .map(DeviceDTO::getOrigin)
                 .distinct()
                 .collect(Collectors.toList());
-        List<String> projectList = deviceList
+        projectList = deviceList
                 .stream()
                 .map(DeviceDTO::getProject)
                 .distinct()
                 .collect(Collectors.toList());
-        List<String> itemTypeList = deviceList
+        itemTypeList = deviceList
                 .stream()
                 .map(DeviceDTO::getItemType)
                 .distinct()
                 .collect(Collectors.toList());
-        List<String> keeperNumberOptions = List.of(new String[]{"LESS THAN 3", "EQUAL TO 3"});
+        keeperNumberOptions = List.of(new String[]{"LESS THAN 3", "EQUAL TO 3"});
+    }
+
+    @Test
+    @DisplayName("Should Show List of Devices using Pagination When making GET request to endpoint: /api/devices/warehouse")
+    public void shouldShowDevicesWithPagination() throws Exception {
         DeviceInWarehouseResponse deviceResponse = new DeviceInWarehouseResponse(deviceList, statusList, originList,
                 projectList, itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
@@ -417,4 +433,40 @@ public class DeviceControllerTest {
                 .andDo(print())
                 .andReturn();
     }
+
+    @Test
+    @DisplayName("Should Show List of Devices of Owner When making GET request to endpoint: /api/devices/owners/{id}")
+    public void shouldShowDevicesOfOwner() throws Exception {
+        int ownerId = 1;
+        OwnedDeviceResponse response = new OwnedDeviceResponse(deviceList, statusList, originList, projectList,
+                itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
+
+        when(deviceService.showOwnedDevicesWithPaging(eq(ownerId), eq(1), eq(2), eq("id"), eq("desc"),
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(response, OK));
+
+        String requestURI = END_POINT + "/owners/" + ownerId + "?pageNo=1&pageSize=2";
+        this.mockMvc
+                .perform(get(requestURI)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .characterEncoding("utf-8"))
+                .andDo(print());
+
+        MvcResult mvcResult = mockMvc
+                .perform(get(requestURI)
+                        .contentType(MEDIA_TYPE_JSON_UTF8)
+                        .accept(MEDIA_TYPE_JSON_UTF8)
+                        .characterEncoding("utf-8"))
+                .andExpect(request().asyncStarted())
+                .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
+                .andDo(print())
+                .andReturn();
+
+        mockMvc
+                .perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pageNo", Matchers.is(1)))
+                .andDo(print());
+    }
+
 }
