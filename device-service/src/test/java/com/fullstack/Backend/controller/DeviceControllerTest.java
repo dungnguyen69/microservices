@@ -1,8 +1,7 @@
-package com.fullstack.Backend;
+package com.fullstack.Backend.controller;
 
-import java.util.Date;
-
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fullstack.Backend.controllers.DeviceController;
 import com.fullstack.Backend.dto.device.*;
 import com.fullstack.Backend.dto.keeper_order.KeeperOrderListDTO;
@@ -46,15 +45,12 @@ import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
 
 /*https://thepracticaldeveloper.com/guide-spring-boot-controller-tests/#strategy-1-spring-mockmvc-example-in-standalone-mode*/
 @ExtendWith(MockitoExtension.class)
 public class DeviceControllerTest {
     private static final String END_POINT = "/api/devices";
-
     private MockMvc mockMvc;
     private final ObjectWriter ow = new ObjectMapper()
             .writer()
@@ -65,7 +61,6 @@ public class DeviceControllerTest {
     @InjectMocks
     private DeviceController deviceController;
     private final DeviceMapper deviceMapper = new DeviceMapperImp();
-
     private Device device;
     private List<DeviceDTO> deviceList;
     private List<String> statusList;
@@ -74,7 +69,6 @@ public class DeviceControllerTest {
     private List<String> itemTypeList;
     private List<String> originList;
     private int ownerId;
-    private HashSet<String> keywordList;
     private KeywordSuggestionResponse keywordSuggestionResponse;
     private FilterDeviceDTO filterDeviceDTO;
 
@@ -84,7 +78,7 @@ public class DeviceControllerTest {
         mockMvc = MockMvcBuilders
                 .standaloneSetup(deviceController)
                 .build();
-        keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
+        HashSet<String> keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
         ownerId = 1;
         device = Device
                 .builder()
@@ -190,7 +184,6 @@ public class DeviceControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .characterEncoding("utf-8"))
-                .andDo(print())
                 .andExpect(jsonPath("$.pageSize", Matchers.is(2)))
                 .andExpect(jsonPath("$.pageNo", Matchers.is(1)));
     }
@@ -224,13 +217,11 @@ public class DeviceControllerTest {
                         .content(requestBody)
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
-                .andDo(print())
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -262,12 +253,10 @@ public class DeviceControllerTest {
                         .content(requestBody)
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
-                .andDo(print())
                 .andReturn();
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andDo(print())
                 .andExpect(jsonPath("$.isAddedSuccessful", Matchers.is(true)));
     }
 
@@ -293,13 +282,11 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andExpect(request().asyncStarted())
                 .andExpect(request().asyncResult(instanceOf(DetailDeviceResponse.class)))
-                .andDo(print())
                 .andReturn();
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.detailDevice.id", Matchers.is(0)))
-                .andDo(print());
+                .andExpect(jsonPath("$.detailDevice.id", Matchers.is(0)));
     }
 
     @Test
@@ -339,13 +326,11 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andExpect(request().asyncStarted())
                 .andExpect(request().asyncResult(instanceOf(UpdateDeviceResponse.class)))
-                .andDo(print())
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andDo(print())
                 .andExpect(jsonPath("$.errors", Matchers.is(nullValue())));
     }
 
@@ -359,8 +344,7 @@ public class DeviceControllerTest {
 
         mockMvc
                 .perform(delete(END_POINT + "/warehouse/" + deviceId))
-                .andExpect(status().isOk())
-                .andDo(print());
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -378,7 +362,6 @@ public class DeviceControllerTest {
                         .param("device", String.valueOf(filterDeviceDTO))
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
-                .andDo(print())
                 .andReturn();
     }
 
@@ -422,7 +405,6 @@ public class DeviceControllerTest {
                         .contentType(MEDIA_TYPE_JSON_UTF8)
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
-                .andDo(print())
                 .andReturn();
     }
 
@@ -436,12 +418,10 @@ public class DeviceControllerTest {
                 Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(response, OK));
 
         String requestURI = END_POINT + "/owners/" + ownerId + "?pageNo=1&pageSize=2";
-        this.mockMvc
-                .perform(get(requestURI)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .characterEncoding("utf-8"))
-                .andDo(print());
+        this.mockMvc.perform(get(requestURI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .characterEncoding("utf-8"));
 
         MvcResult mvcResult = mockMvc
                 .perform(get(requestURI)
@@ -450,14 +430,12 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andExpect(request().asyncStarted())
                 .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
-                .andDo(print())
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pageNo", Matchers.is(1)))
-                .andDo(print());
+                .andExpect(jsonPath("$.pageNo", Matchers.is(1)));
     }
 
     @Test
@@ -481,14 +459,12 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andExpect(request().asyncStarted())
                 .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
-                .andDo(print())
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.keepDeviceReturned", Matchers.is(true)))
-                .andDo(print());
+                .andExpect(jsonPath("$.keepDeviceReturned", Matchers.is(true)));
     }
 
     @Test
@@ -512,14 +488,12 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andExpect(request().asyncStarted())
                 .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
-                .andDo(print())
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.keepDeviceReturned", Matchers.is(true)))
-                .andDo(print());
+                .andExpect(jsonPath("$.keepDeviceReturned", Matchers.is(true)));
     }
 
     @Test
@@ -557,12 +531,6 @@ public class DeviceControllerTest {
                 Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(response, OK));
 
         String requestURI = END_POINT + "/keepers/" + ownerId + "?pageNo=1&pageSize=2";
-        this.mockMvc
-                .perform(get(requestURI)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .characterEncoding("utf-8"))
-                .andDo(print());
 
         MvcResult mvcResult = mockMvc
                 .perform(get(requestURI)
@@ -571,14 +539,12 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andExpect(request().asyncStarted())
                 .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
-                .andDo(print())
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.pageNo", Matchers.is(1)))
-                .andDo(print());
+                .andExpect(jsonPath("$.pageNo", Matchers.is(1)));
     }
 
     @Test
@@ -596,7 +562,6 @@ public class DeviceControllerTest {
                         .param("device", String.valueOf(filterDeviceDTO))
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
-                .andDo(print())
                 .andReturn();
     }
 
@@ -615,7 +580,6 @@ public class DeviceControllerTest {
                         .param("device", String.valueOf(filterDeviceDTO))
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
-                .andDo(print())
                 .andReturn();
     }
 }
