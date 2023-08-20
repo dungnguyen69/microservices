@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class OwnedDeviceResponse {
+public class OwnDeviceResponse {
     private List<DeviceDTO> devicesList;
     private List<String> statusList;
     private List<String> originList;

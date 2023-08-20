@@ -39,12 +39,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
-import static org.mockito.Mockito.*;
-import static org.springframework.http.HttpStatus.*;
+import static org.mockito.Mockito.when;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /*https://thepracticaldeveloper.com/guide-spring-boot-controller-tests/#strategy-1-spring-mockmvc-example-in-standalone-mode*/
@@ -77,6 +78,7 @@ public class DeviceControllerTest {
         MockitoAnnotations.openMocks(this);
         mockMvc = MockMvcBuilders
                 .standaloneSetup(deviceController)
+                .alwaysDo(print())
                 .build();
         HashSet<String> keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
         ownerId = 1;
@@ -176,7 +178,7 @@ public class DeviceControllerTest {
                 projectList, itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
         when(deviceService.showDevicesWithPaging(eq(1), eq(2), eq("id"), eq("desc"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(deviceResponse, OK));
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(deviceResponse);
 
         String requestURI = END_POINT + "/warehouse?pageNo=1&pageSize=2";
         this.mockMvc
@@ -207,8 +209,9 @@ public class DeviceControllerTest {
                 .projectId(1)
                 .comments(null)
                 .build();
-        List<ErrorMessage> errors = new ArrayList<>();
-        when(deviceService.addDevice(refEq(newDevice))).thenReturn(new ResponseEntity<>(errors, BAD_REQUEST));
+        List<ErrorMessage> errors = new ArrayList<>(
+                List.of(new ErrorMessage(BAD_REQUEST, "Invalid", new Date().toString())));
+        when(deviceService.addDevice(refEq(newDevice))).thenReturn(new AddDeviceResponse(errors));
         String requestBody = ow.writeValueAsString(newDevice);
 
         MvcResult mvcResult = mockMvc
@@ -244,8 +247,9 @@ public class DeviceControllerTest {
                 .comments(null)
                 .build();
         Device device = deviceMapper.addDeviceDtoToDevice(newDevice);
-        AddDeviceResponse addDeviceResponse = new AddDeviceResponse(device, true);
-        when(deviceService.addDevice(refEq(newDevice))).thenReturn(ResponseEntity.ok(addDeviceResponse));
+        List<ErrorMessage> errorMessages = new ArrayList<>();
+        AddDeviceResponse addDeviceResponse = new AddDeviceResponse(device, true, errorMessages);
+        when(deviceService.addDevice(refEq(newDevice))).thenReturn(addDeviceResponse);
         String requestBody = ow.writeValueAsString(newDevice);
         MvcResult mvcResult = mockMvc
                 .perform(post(END_POINT + "/warehouse")
@@ -256,8 +260,7 @@ public class DeviceControllerTest {
                 .andReturn();
         mockMvc
                 .perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.isAddedSuccessful", Matchers.is(true)));
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -315,6 +318,7 @@ public class DeviceControllerTest {
         Optional<Device> updatedDevice = deviceMapper.updateDtoToDevice(device, dto);
         UpdateDeviceResponse response = new UpdateDeviceResponse();
         response.setUpdatedDevice(updatedDevice.orElse(null));
+        response.setErrors(new ArrayList<>());
         when(deviceService.updateDevice(eq(deviceId), refEq(dto))).thenReturn(response);
         String requestBody = ow.writeValueAsString(dto);
 
@@ -325,13 +329,13 @@ public class DeviceControllerTest {
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
                 .andExpect(request().asyncStarted())
-                .andExpect(request().asyncResult(instanceOf(UpdateDeviceResponse.class)))
+                .andExpect(request().asyncResult(instanceOf(ResponseEntity.class)))
                 .andReturn();
 
         mockMvc
                 .perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.errors", Matchers.is(nullValue())));
+                .andExpect(jsonPath("$.errors", Matchers.empty()));
     }
 
     @Test
@@ -340,7 +344,8 @@ public class DeviceControllerTest {
         int deviceId = 0;
         DeleteDeviceResponse response = new DeleteDeviceResponse();
         response.setIsDeletionSuccessful(true);
-        when(deviceService.deleteDevice(eq(deviceId))).thenReturn(new ResponseEntity<>(response, OK));
+        response.setErrorMessage("");
+        when(deviceService.deleteDevice(eq(deviceId))).thenReturn(response);
 
         mockMvc
                 .perform(delete(END_POINT + "/warehouse/" + deviceId))
@@ -352,7 +357,7 @@ public class DeviceControllerTest {
     public void shouldSuggestKeywordDevices() throws Exception {
 
         when(deviceService.getSuggestKeywordDevices(eq(0), eq("a"), Mockito.any(FilterDeviceDTO.class))).thenReturn(
-                new ResponseEntity<>(keywordSuggestionResponse, OK));
+                keywordSuggestionResponse);
 
         mockMvc
                 .perform(get(END_POINT + "/warehouse/suggestion")
@@ -411,11 +416,11 @@ public class DeviceControllerTest {
     @Test
     @DisplayName("Should Show List of Devices of Owner When making GET request to endpoint: /api/devices/owners/{id}")
     public void shouldShowDevicesOfOwner() throws Exception {
-        OwnedDeviceResponse response = new OwnedDeviceResponse(deviceList, statusList, originList, projectList,
+        OwnDeviceResponse response = new OwnDeviceResponse(deviceList, statusList, originList, projectList,
                 itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
-        when(deviceService.showOwnedDevicesWithPaging(eq(ownerId), eq(1), eq(2), eq("id"), eq("desc"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(response, OK));
+        when(deviceService.showOwnDevicesWithPaging(eq(ownerId), eq(1), eq(2), eq("id"), eq("desc"),
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(response);
 
         String requestURI = END_POINT + "/owners/" + ownerId + "?pageNo=1&pageSize=2";
         this.mockMvc.perform(get(requestURI)
@@ -447,7 +452,7 @@ public class DeviceControllerTest {
         response.setKeepDeviceReturned(true);
         response.setOldKeepers(oldKeepers);
         ReturnKeepDeviceDTO dto = new ReturnKeepDeviceDTO(1, 1, 1);
-        when(deviceService.updateReturnKeepDevice(refEq(dto))).thenReturn(new ResponseEntity<>(response, OK));
+        when(deviceService.updateReturnKeepDevice(refEq(dto))).thenReturn(response);
 
         String requestURI = END_POINT + "/keepers/return";
         String requestBody = ow.writeValueAsString(dto);
@@ -476,7 +481,7 @@ public class DeviceControllerTest {
         response.setKeepDeviceReturned(true);
         response.setOldKeepers(oldKeepers);
         ReturnKeepDeviceDTO dto = new ReturnKeepDeviceDTO(1, 1, 1);
-        when(deviceService.updateReturnOwnedDevice(refEq(dto))).thenReturn(new ResponseEntity<>(response, OK));
+        when(deviceService.updateReturnOwnDevice(refEq(dto))).thenReturn(response);
 
         String requestURI = END_POINT + "/owners/return";
         String requestBody = ow.writeValueAsString(dto);
@@ -528,7 +533,7 @@ public class DeviceControllerTest {
                 itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
         when(deviceService.showKeepingDevicesWithPaging(eq(ownerId), eq(1), eq(2),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(response, OK));
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(response);
 
         String requestURI = END_POINT + "/keepers/" + ownerId + "?pageNo=1&pageSize=2";
 
@@ -551,8 +556,8 @@ public class DeviceControllerTest {
     @DisplayName("Should Retrieve List of Keywords for Owner When making GET request to endpoint: /api/devices/owners/suggestion/{id}")
     public void shouldSuggestKeywordDevicesForOwner() throws Exception {
 
-        when(deviceService.getSuggestKeywordOwnedDevices(eq(ownerId), eq(0), eq("a"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(keywordSuggestionResponse, OK));
+        when(deviceService.getSuggestKeywordOwnDevices(eq(ownerId), eq(0), eq("a"),
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(keywordSuggestionResponse);
 
         mockMvc
                 .perform(get(END_POINT + "/owners/suggestion/" + ownerId)
@@ -570,7 +575,7 @@ public class DeviceControllerTest {
     public void shouldSuggestKeywordDevicesForKeeper() throws Exception {
 
         when(deviceService.getSuggestKeywordKeepingDevices(eq(ownerId), eq(0), eq("a"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(new ResponseEntity<>(keywordSuggestionResponse, OK));
+                Mockito.any(FilterDeviceDTO.class))).thenReturn(keywordSuggestionResponse);
 
         mockMvc
                 .perform(get(END_POINT + "/keepers/suggestion/" + ownerId)

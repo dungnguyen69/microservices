@@ -1,62 +1,51 @@
 package com.fullstack.Backend.services.impl;
 
-import java.text.ParseException;
-import java.util.Date;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import com.fullstack.Backend.dto.device.*;
 import com.fullstack.Backend.dto.keeper_order.KeeperOrderListDTO;
 import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
-import com.fullstack.Backend.models.*;
+import com.fullstack.Backend.enums.Origin;
+import com.fullstack.Backend.enums.Project;
+import com.fullstack.Backend.enums.Status;
 import com.fullstack.Backend.mappers.DeviceMapper;
+import com.fullstack.Backend.models.*;
+import com.fullstack.Backend.repositories.interfaces.DeviceRepository;
 import com.fullstack.Backend.responses.device.*;
 import com.fullstack.Backend.services.*;
 import com.fullstack.Backend.utils.*;
+import com.fullstack.Backend.utils.dropdowns.*;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.*;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.fullstack.Backend.constant.constant.*;
 import static org.springframework.http.HttpStatus.*;
-
-import com.fullstack.Backend.enums.Origin;
-import com.fullstack.Backend.enums.Project;
-import com.fullstack.Backend.enums.Status;
-import com.fullstack.Backend.repositories.interfaces.DeviceRepository;
-import com.fullstack.Backend.utils.dropdowns.ItemTypeList;
-import com.fullstack.Backend.utils.dropdowns.OriginList;
-import com.fullstack.Backend.utils.dropdowns.PlatformList;
-import com.fullstack.Backend.utils.dropdowns.ProjectList;
-import com.fullstack.Backend.utils.dropdowns.RamList;
-import com.fullstack.Backend.utils.dropdowns.ScreenList;
-import com.fullstack.Backend.utils.dropdowns.StatusList;
-import com.fullstack.Backend.utils.dropdowns.StorageList;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.web.reactive.function.client.WebClient;
 
 
 @Service
@@ -93,7 +82,7 @@ public class DeviceServiceImp implements DeviceService {
     final static Logger logger = LoggerFactory.getLogger(DeviceServiceImp.class);
 
     @Override
-    public ResponseEntity<Object> showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
+    public DeviceInWarehouseResponse showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort
                 .by(sortBy)
                 .ascending() : Sort
@@ -131,21 +120,20 @@ public class DeviceServiceImp implements DeviceService {
         DeviceInWarehouseResponse deviceResponse = new DeviceInWarehouseResponse(deviceList, statusList, originList,
                 projectList, itemTypeList, keeperNumberOptions, pageIndex, pageSize, totalElements,
                 getTotalPages(pageSize, totalElements));
-        return new ResponseEntity<>(deviceResponse, OK);
+        return deviceResponse;
     }
 
     @Override
     @Transactional
-    public ResponseEntity<Object> addDevice(AddDeviceDTO dto) throws ExecutionException, InterruptedException {
+    public AddDeviceResponse addDevice(AddDeviceDTO dto) throws ExecutionException, InterruptedException {
         List<ErrorMessage> errors = new ArrayList<>();
         checkFieldsWhenAddingDevice(errors, dto);
-        if(errors.size() > 0) return new ResponseEntity<>(errors, BAD_REQUEST);
+        if(errors.size() > 0) return new AddDeviceResponse(errors);
         Device newDevice = deviceMapper.addDeviceDtoToDevice(dto);
         newDevice.setOwnerId(findUserByName(dto.getOwner()).getId());
         logger.debug("New Device: {}", newDevice);
         saveDevice(newDevice);
-        AddDeviceResponse addDeviceResponse = new AddDeviceResponse(newDevice, true);
-        return new ResponseEntity<>(addDeviceResponse, OK);
+        return new AddDeviceResponse(newDevice, true, null);
     }
 
     private void doLongRunningTask() {
@@ -251,12 +239,13 @@ public class DeviceServiceImp implements DeviceService {
     @Override
     @Caching(evict = {@CacheEvict(value = "detail_device", key = "#deviceId")})
     @Transactional
-    public ResponseEntity<Object> deleteDevice(int deviceId) {
+    public DeleteDeviceResponse deleteDevice(int deviceId) {
         DeleteDeviceResponse response = new DeleteDeviceResponse();
 
         if(doesDeviceExist(deviceId)) {
             response.setErrorMessage("Device is not existent");
-            return new ResponseEntity<>(response, NOT_FOUND);
+            return response;
+//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, PENDING)) {
             deleteRequestBasedOnStatusAndDevice(deviceId, PENDING);
@@ -267,19 +256,23 @@ public class DeviceServiceImp implements DeviceService {
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, APPROVED)) {
             response.setErrorMessage("Cannot delete by virtue of approved requests for this device");
-            return new ResponseEntity<>(response, NOT_FOUND);
+            return response;
+//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, TRANSFERRED)) {
             response.setErrorMessage("Cannot delete by virtue of transferred requests for this device");
-            return new ResponseEntity<>(response, NOT_FOUND);
+            return response;
+//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, EXTENDING)) {
             response.setErrorMessage("Cannot delete because someone uses this device");
-            return new ResponseEntity<>(response, NOT_FOUND);
+            return response;
+//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         _deviceRepository.deleteById((long) deviceId);
         response.setIsDeletionSuccessful(true);
-        return new ResponseEntity<>(response, OK);
+        return response;
+//        return new ResponseEntity<>(response, OK);
     }
 
     @Async
@@ -416,18 +409,13 @@ public class DeviceServiceImp implements DeviceService {
     }
 
     @Override
-    public ResponseEntity<Object> getSuggestKeywordDevices(int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
-
-        if(isKeywordInvalid(keyword)) return ResponseEntity
-                .status(NOT_FOUND)
-                .body("Keyword must be non-null");
-
+    public KeywordSuggestionResponse getSuggestKeywordDevices(int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
         List<Device> devices = _deviceRepository.findAll();
         List<DeviceDTO> deviceList = getAllDevices(devices, deviceFilter);
         Set<String> keywordList = selectColumnForKeywordSuggestion(deviceList, keyword, fieldColumn);
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
-        return new ResponseEntity<>(response, OK);
+        return response;
     }
 
     @Override
@@ -454,7 +442,7 @@ public class DeviceServiceImp implements DeviceService {
 
     @Override
     @Transactional
-    public ResponseEntity<Object> updateReturnKeepDevice(ReturnKeepDeviceDTO input) throws ExecutionException, InterruptedException, ParseException {
+    public ReturnDeviceResponse updateReturnKeepDevice(ReturnKeepDeviceDTO input) throws ExecutionException, InterruptedException, ParseException {
         /*  No 1: B borrowed A's from 1/6 - 1/10
          *  No 2: C borrowed B's from 1/7 - 1/9
          *  No 3: D borrowed C's from 1/8 - 15/8
@@ -476,7 +464,9 @@ public class DeviceServiceImp implements DeviceService {
                 .filter(ko -> ko.getKeeperNo() > input.getKeeperNo())
                 .toList();
 
-        if(keeperOrderReturnList.size() == 0) return new ResponseEntity<>(response, NOT_FOUND);
+        if(keeperOrderReturnList.size() == 0) {
+            return null;
+        }
 
         for (KeeperOrder keeperOrder : keeperOrderReturnList) {
             Request occupiedRequest = findAnOccupiedRequest(keeperOrder
@@ -494,16 +484,16 @@ public class DeviceServiceImp implements DeviceService {
         }
         response.setKeepDeviceReturned(true);
         response.setOldKeepers(oldKeepers);
-        return new ResponseEntity<>(response, OK);
+        return response;
     }
 
     @Override
     @Transactional
-    public ResponseEntity<Object> updateReturnOwnedDevice(ReturnKeepDeviceDTO input) throws ExecutionException, InterruptedException, ParseException {
+    public ReturnDeviceResponse updateReturnOwnDevice(ReturnKeepDeviceDTO input) throws ExecutionException, InterruptedException, ParseException {
         /*  No 1: B borrowed A's from 1/6 - 1/10
          *  No 2: C borrowed B's from 1/7 - 1/9
          *  No 3: D borrowed C's from 1/8 - 15/8
-         *  owner (as an input) is able to confirm that 1, 2 or 3 RETURNED THE DEVICE.
+         *  owner (as an input) is able to confirm that 1, 2 or 3 whose the DEVICE is RETURNED.
          *  Find orders (keeperOrderReturnList) of a device
          *  Find old requests based upon keeper and device of keeperOrderReturnList's keeper order
          *  Set current keeper to OWNER
@@ -516,7 +506,14 @@ public class DeviceServiceImp implements DeviceService {
         List<KeeperOrder> keeperOrderReturnList = Arrays.asList(getListByDeviceId(input.getDeviceId()));
         ReturnDeviceResponse response = new ReturnDeviceResponse();
 
-        if(keeperOrderReturnList.size() == 0) return new ResponseEntity<>(response, NOT_FOUND);
+        if(keeperOrderReturnList.size() == 0) {
+            return null;
+        }
+
+        Optional<Device> device = getDeviceById(input.getDeviceId());
+        if(device.isEmpty()) {
+            return null;
+        }
 
         List<String> oldKeepers = new ArrayList<>();
         for (KeeperOrder keeperOrder : keeperOrderReturnList) {
@@ -535,23 +532,21 @@ public class DeviceServiceImp implements DeviceService {
             updateKeeper(keeperOrder);
         }
 
-        Optional<Device> device = getDeviceById(input.getDeviceId());
-        if(device.isEmpty()) return new ResponseEntity<>(response, NOT_FOUND);
-
         device
                 .get()
                 .setStatus(Status.VACANT);
         saveDevice(device.get());
         response.setKeepDeviceReturned(true);
         response.setOldKeepers(oldKeepers);
-        return new ResponseEntity<>(response, OK);
+        return response;
     }
 
     @Override
-    public ResponseEntity<Object> showOwnedDevicesWithPaging(int ownerId, int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter) throws ExecutionException, InterruptedException {
+    public OwnDeviceResponse showOwnDevicesWithPaging(int ownerId, int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter) throws ExecutionException, InterruptedException {
         var userById = findUserById(ownerId);
-
-        if(userById == null) return new ResponseEntity<>("User does not exist", NOT_FOUND);
+        if(userById == null) {
+            return null;
+        }
 
         List<DeviceDTO> deviceList = getDevicesOfOwner(ownerId, deviceFilter, sortBy, sortDir);
         /* Return lists for filtering purposes*/
@@ -581,7 +576,7 @@ public class DeviceServiceImp implements DeviceService {
         int totalElements = deviceList.size();
         deviceList = getPage(deviceList, pageIndex, pageSize); /*Pagination*/
         /* Return the desired response*/
-        OwnedDeviceResponse response = new OwnedDeviceResponse();
+        OwnDeviceResponse response = new OwnDeviceResponse();
         response.setDevicesList(deviceList);
         response.setPageNo(pageIndex);
         response.setPageSize(pageSize);
@@ -592,19 +587,21 @@ public class DeviceServiceImp implements DeviceService {
         response.setProjectList(projectList);
         response.setItemTypeList(itemTypeList);
         response.setKeeperNumberOptions(keeperNumberOptions);
-        return new ResponseEntity<>(response, OK);
+        return response;
     }
 
     @Override
-    public ResponseEntity<Object> showKeepingDevicesWithPaging(int keeperId, int pageIndex, int pageSize, FilterDeviceDTO deviceFilter) throws ExecutionException, InterruptedException {
+    public KeepingDeviceResponse showKeepingDevicesWithPaging(int keeperId, int pageIndex, int pageSize, FilterDeviceDTO deviceFilter) throws ExecutionException, InterruptedException {
         var userById = findUserById(keeperId);
 
-        if(userById == null) return new ResponseEntity<>("User does not exist", NOT_FOUND);
+        if(userById == null) {
+            return null;
+        }
 
         KeepingDeviceResponse response = new KeepingDeviceResponse();
         List<KeepingDeviceDTO> keepingDeviceList = getDevicesOfKeeper(keeperId, deviceFilter);
         if(keepingDeviceList == null) {
-            return new ResponseEntity<>(response, OK);
+            return response;
         }
         List<String> statusList = keepingDeviceList
                 .stream()
@@ -640,35 +637,25 @@ public class DeviceServiceImp implements DeviceService {
         response.setProjectList(projectList);
         response.setItemTypeList(itemTypeList);
         response.setKeeperNumberOptions(keeperNumberOptions);
-        return new ResponseEntity<>(response, OK);
+        return response;
     }
 
     @Override
-    public ResponseEntity<Object> getSuggestKeywordOwnedDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
-        if(isKeywordInvalid(keyword)) return ResponseEntity
-                .status(NOT_FOUND)
-                .body("Keyword must be non-null");
-
+    public KeywordSuggestionResponse getSuggestKeywordOwnDevices(int ownerId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
         List<DeviceDTO> deviceList = getDevicesOfOwner(ownerId, deviceFilter, "id", "asc");
         Set<String> keywordList = selectColumnForKeywordSuggestion(deviceList, keyword, fieldColumn);
-
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
-        return new ResponseEntity<>(response, OK);
+        return response;
     }
 
     @Override
-    public ResponseEntity<Object> getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
-        if(isKeywordInvalid(keyword)) return ResponseEntity
-                .status(NOT_FOUND)
-                .body("Keyword must be non-null");
-
+    public KeywordSuggestionResponse getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter) throws InterruptedException, ExecutionException {
         List<KeepingDeviceDTO> deviceList = getDevicesOfKeeper(keeperId, deviceFilter);
         Set<String> keywordList = selectColumnForKeepingDevicesKeywordSuggestion(deviceList, keyword, fieldColumn);
-
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
-        return new ResponseEntity<>(response, OK);
+        return response;
     }
 
     private List<DeviceDTO> getAllDevices(List<Device> devices, FilterDeviceDTO deviceFilter) throws ExecutionException, InterruptedException {
