@@ -2,7 +2,6 @@ package com.fullstack.Backend.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,12 +20,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /* Spring Security */
 @Configuration
-@ComponentScan(basePackages = {"com.fullstack.Backend.services"})
 @EnableMethodSecurity
 public class WebSecurityConfig {
 
     private final UserDetailsService userService;
-
 
     @Autowired
     public WebSecurityConfig(@Lazy UserDetailsService userService) {
@@ -68,7 +65,7 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/devices/**", "/api/requests/**", "/api/users/**", "/actuator/**")
+                        .requestMatchers("/api/devices/**", "/api/requests/**", "/api/users/**", "/actuator/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**", "/v3/api-docs", "/api/keeper-orders/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated());
