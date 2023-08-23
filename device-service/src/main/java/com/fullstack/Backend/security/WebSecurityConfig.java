@@ -26,15 +26,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class WebSecurityConfig {
 
     private final UserDetailsService userService;
-
+    @Autowired
+    private AuthEntryPointJwt unauthorizedHandler;
 
     @Autowired
     public WebSecurityConfig(@Lazy UserDetailsService userService) {
         this.userService = userService;
     }
-
-    @Autowired
-    private AuthEntryPointJwt unauthorizedHandler;
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -68,8 +66,7 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/devices/**", "/api/requests/**", "/api/users/**", "/actuator/**",
-                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**")
+                        .requestMatchers("/api/devices/**", "/api/requests/**", "/api/users/**", "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**", "/api/keeper-orders/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated());

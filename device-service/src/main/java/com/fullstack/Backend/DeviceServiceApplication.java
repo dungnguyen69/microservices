@@ -12,11 +12,11 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableCaching
 @EnableTransactionManagement
 @EnableDiscoveryClient
-@OpenAPIDefinition(info = @Info(title = "Device API", version = "1.0", description = "Documentation Device API v1.0"))
+@OpenAPIDefinition(info = @Info(title = "Device API", version = "1.0",
+        description = "Documentation Device API v1.0. Call login API to set token into the authentication header before calling any APIs"))
 public class DeviceServiceApplication {
 
     public static void main(String[] args) {
-
         try {
             SpringApplication app = new SpringApplication(DeviceServiceApplication.class);
             app.run(args);

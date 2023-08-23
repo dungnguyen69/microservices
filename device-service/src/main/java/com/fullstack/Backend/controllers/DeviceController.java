@@ -15,8 +15,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,10 +39,8 @@ import static org.springframework.http.HttpStatus.*;
 
 @RestController
 @RequestMapping("/api/devices")
+@Tag(name = "Device", description = "Device APIs (READ ONLY)")
 public class DeviceController {
-
-    @Autowired
-    DeviceService _deviceService;
 
     private final String user = "user";
     private final String fieldColumnDescription = """
@@ -56,13 +56,16 @@ public class DeviceController {
             SERIAL_NUMBER = 8 \n
             KEEPER = 9 \n
             """;
-    private final String filterDescription = "Enter fields to filter";
+    private final String filterDescription = "Enter fields to filter or leave it empty";
     private final String keeperInfo = "Keeper Id";
     private final String ownerInfo = "Owner Id";
-    private final String deviceInfo= "Device Id";
-    private final String badRequest ="Invalid request";
+    private final String deviceInfo = "Device Id";
+    private final String badRequest = "Invalid request";
     private final String adminOrMod = "hasRole('MODERATOR') or hasRole('ADMIN')";
     private final String allUsers = "hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')";
+    @Autowired
+    DeviceService _deviceService;
+
     @GetMapping(value = "/{id}")
     @Operation(summary = "REMOTE CALL in microservice: Get device details")
     @ApiResponses(value = {
@@ -70,13 +73,9 @@ public class DeviceController {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = Device.class))
             })
     })
-    public ResponseEntity<Device> getDeviceById(@Parameter(description = deviceInfo) @PathVariable(
-            value = "id") int id) {
-        return ResponseEntity
-                .ok()
-                .body(_deviceService
-                        .getDeviceById(id)
-                        .orElse(null));
+    public ResponseEntity<Device> getDeviceById(
+            @Parameter(description = deviceInfo) @PathVariable(value = "id") int id) {
+        return ResponseEntity.ok().body(_deviceService.getDeviceById(id).orElse(null));
     }
 
     @PostMapping
@@ -86,7 +85,9 @@ public class DeviceController {
                     @Content(mediaType = "application/json")
             })
     })
-    public void saveDevice(@RequestBody Device device) {
+    public void saveDevice(
+            @RequestBody(description = "Enter fields to create") @org.springframework.web.bind.annotation.RequestBody
+            Device device) {
         _deviceService.saveDevice(device);
     }
 
@@ -99,12 +100,13 @@ public class DeviceController {
                             schema = @Schema(implementation = DeviceInWarehouseResponse.class))
             })
     })
-    public DeviceInWarehouseResponse showDevicesWithPaging(@RequestParam(defaultValue = DEFAULT_PAGE_NUMBER,
-            required = false) int pageNo, @RequestParam(defaultValue = DEFAULT_PAGE_SIZE,
-            required = false) int pageSize, @RequestParam(defaultValue = DEFAULT_SORT_BY,
-            required = false) String sortBy, @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION,
-            required = false) String sortDir, @Parameter(description = filterDescription) @DateTimeFormat(
-            iso = DateTimeFormat.ISO.DATE_TIME) FilterDeviceDTO deviceFilterDTO) throws InterruptedException, ExecutionException {
+    public DeviceInWarehouseResponse showDevicesWithPaging(
+            @RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize,
+            @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy,
+            @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir,
+            @Parameter(description = filterDescription) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            FilterDeviceDTO deviceFilterDTO) throws InterruptedException, ExecutionException {
         return _deviceService.showDevicesWithPaging(pageNo, pageSize, sortBy, sortDir, deviceFilterDTO);
     }
 
@@ -112,7 +114,7 @@ public class DeviceController {
     @PreAuthorize(allUsers)
     @CircuitBreaker(name = user, fallbackMethod = "fallbackMethod")
     @TimeLimiter(name = user, fallbackMethod = "fallbackMethod")
-    @Retry(name = user)
+    @Retry(name = user, fallbackMethod = "fallbackMethod")
     @Operation(summary = "Get Device Details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Device Details", content = {
@@ -120,10 +122,13 @@ public class DeviceController {
                             schema = @Schema(implementation = DetailDeviceResponse.class))
             })
     })
-    public CompletableFuture<Object> getDetailDevice(@Parameter(description = deviceInfo) @PathVariable(
-            value = "id") int deviceId) {
+    public CompletableFuture<Object> getDetailDevice(@PathVariable(value = "id") int deviceId) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                DetailDeviceResponse response = _deviceService.getDetailDevice(deviceId);
+                if(response.getDetailDevice() == null) {
+                    return new ResponseEntity<>(NOT_FOUND);
+                }
                 return _deviceService.getDetailDevice(deviceId);
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
@@ -145,14 +150,13 @@ public class DeviceController {
             @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorMessage.class))
     })
     })
-    public CompletableFuture<ResponseEntity<Object>> addDevice(@Valid @RequestBody AddDeviceDTO device) {
+    public CompletableFuture<ResponseEntity<Object>> addDevice(
+            @RequestBody(description = "Enter fields to create") @org.springframework.web.bind.annotation.RequestBody
+            @Valid AddDeviceDTO device) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 AddDeviceResponse response = _deviceService.addDevice(device);
-                if(!response
-                        .getErrorMessages()
-                        .isEmpty())
-                {
+                if(response.getErrorMessages() != null) {
                     return new ResponseEntity<>(response, BAD_REQUEST);
                 }
                 return new ResponseEntity<>(response, OK);
@@ -177,12 +181,16 @@ public class DeviceController {
             @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorMessage.class))
     })
     })
-    public CompletableFuture<ResponseEntity<Object>> updateDevice(@Parameter(description = deviceInfo) @PathVariable(
-            value = "id") int deviceId, @Valid @RequestBody UpdateDeviceDTO device) {
+    public CompletableFuture<ResponseEntity<Object>> updateDevice(
+            @Parameter(description = deviceInfo) @PathVariable(value = "id") int deviceId, @Valid
+    @RequestBody(description = "Get existing device to update (ignore Keeper Order")
+    @org.springframework.web.bind.annotation.RequestBody UpdateDeviceDTO device) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 UpdateDeviceResponse response = _deviceService.updateDevice(deviceId, device);
-                if(response == null) return new ResponseEntity<>(null, NOT_FOUND);
+                if(response == null) {
+                    return new ResponseEntity<>(NOT_FOUND);
+                }
                 return new ResponseEntity<>(response, OK);
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
@@ -202,17 +210,13 @@ public class DeviceController {
             @Content(mediaType = "application/json")
     })
     })
-    public ResponseEntity<Object> getSuggestKeywordDevices(@Parameter(
-            description = fieldColumnDescription) @RequestParam(name = "column") int fieldColumn, @RequestParam(
-            name = "keyword") String keyword, @Parameter(
-            description = filterDescription) FilterDeviceDTO device) throws InterruptedException, ExecutionException {
-        if(keyword
-                .trim()
-                .isBlank())
-        {
-            return ResponseEntity
-                    .status(BAD_REQUEST)
-                    .body("Keyword must be non-null");
+    public ResponseEntity<Object> getSuggestKeywordDevices(
+            @Parameter(description = fieldColumnDescription) @RequestParam(name = "column") int fieldColumn,
+            @RequestParam(name = "keyword") String keyword,
+            @Parameter(description = filterDescription) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            FilterDeviceDTO device) throws InterruptedException, ExecutionException {
+        if(keyword.trim().isBlank()) {
+            return ResponseEntity.status(BAD_REQUEST).body("Keyword must be non-null");
         }
         KeywordSuggestionResponse response = _deviceService.getSuggestKeywordDevices(fieldColumn, keyword, device);
         return new ResponseEntity<>(response, OK);
@@ -230,13 +234,11 @@ public class DeviceController {
             @Content(mediaType = "application/json")
     })
     })
-    public ResponseEntity<Object> deleteDevice(@Parameter(description = deviceInfo) @PathVariable(
-            value = "id") int deviceId) throws InterruptedException, ExecutionException {
+    public ResponseEntity<Object> deleteDevice(
+            @Parameter(description = deviceInfo) @PathVariable(value = "id") int deviceId)
+            throws InterruptedException, ExecutionException {
         DeleteDeviceResponse response = _deviceService.deleteDevice(deviceId);
-        if(!response
-                .getErrorMessage()
-                .isEmpty())
-        {
+        if(response.getErrorMessage() != null) {
             return new ResponseEntity<>(response, NOT_FOUND);
         }
         return new ResponseEntity<>(response, OK);
@@ -251,7 +253,8 @@ public class DeviceController {
                     @Content(mediaType = "application/json")
             })
     })
-    public void exportToExcel(HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
+    public void exportToExcel(HttpServletResponse response)
+            throws IOException, ExecutionException, InterruptedException {
         _deviceService.exportToExcel(response);
     }
 
@@ -264,8 +267,9 @@ public class DeviceController {
                     @Content(mediaType = "application/json")
             })
     })
-    public void exportToExcelForOwner(@Parameter(description = ownerInfo) @PathVariable(
-            value = "id") int ownerId, HttpServletResponse response) throws IOException, ExecutionException, InterruptedException {
+    public void exportToExcelForOwner(
+            @Parameter(description = ownerInfo) @PathVariable(value = "id") int ownerId, HttpServletResponse response)
+            throws IOException, ExecutionException, InterruptedException {
         _deviceService.exportToExcelForOwner(ownerId, response);
     }
 
@@ -278,7 +282,8 @@ public class DeviceController {
                     @Content(mediaType = "application/json")
             })
     })
-    public void downloadTemplateImport(HttpServletResponse response) throws IOException, InterruptedException, ExecutionException {
+    public void downloadTemplateImport(HttpServletResponse response)
+            throws IOException, InterruptedException, ExecutionException {
         _deviceService.downloadTemplate(response);
     }
 
@@ -297,9 +302,9 @@ public class DeviceController {
             @Content(mediaType = "application/json")
     })
     })
-    public CompletableFuture<ResponseEntity<Object>> importFile(@Parameter(
-            description = "Id of owner (Please fetch id after login)") @PathVariable(
-            value = "id") int ownerId, @RequestParam("file") MultipartFile file) {
+    public CompletableFuture<ResponseEntity<Object>> importFile(
+            @Parameter(description = "Id of owner (Take Id after login)") @PathVariable(value = "id") int ownerId,
+            @RequestParam("file") MultipartFile file) {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -338,18 +343,19 @@ public class DeviceController {
             @Content(mediaType = "application/json")
     })
     })
-    public CompletableFuture<ResponseEntity<Object>> getDevicesOfOwner(@Parameter(
-            description = ownerInfo) @PathVariable(value = "id") int ownerId, @RequestParam(
-            defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(
-            defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @RequestParam(
-            defaultValue = DEFAULT_SORT_BY, required = false) String sortBy, @RequestParam(
-            defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir, @Parameter(
-            description = filterDescription) @DateTimeFormat(
-            pattern = "yyyy-MM-dd") FilterDeviceDTO deviceFilterDTO) {
+    public CompletableFuture<ResponseEntity<Object>> getDevicesOfOwner(
+            @Parameter(description = ownerInfo) @PathVariable(value = "id") int ownerId,
+            @RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize,
+            @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy,
+            @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir,
+            @Parameter(description = filterDescription) @DateTimeFormat(pattern = "yyyy-MM-dd")
+            FilterDeviceDTO deviceFilterDTO) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                OwnDeviceResponse response = _deviceService.showOwnDevicesWithPaging(ownerId, pageNo, pageSize, sortBy,
-                        sortDir, deviceFilterDTO);
+                OwnDeviceResponse
+                        response
+                        = _deviceService.showOwnDevicesWithPaging(ownerId, pageNo, pageSize, sortBy, sortDir, deviceFilterDTO);
                 if(response == null) {
                     return new ResponseEntity<>("User does not exist", NOT_FOUND);
                 }
@@ -375,16 +381,17 @@ public class DeviceController {
             @Content(mediaType = "application/json")
     })
     })
-    public CompletableFuture<ResponseEntity<Object>> getDevicesOfKeeper(@Parameter(
-            description = keeperInfo) @PathVariable(value = "id") int keeperId, @RequestParam(
-            defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo, @RequestParam(
-            defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize, @Parameter(
-            description = filterDescription) @DateTimeFormat(
-            pattern = "yyyy-MM-dd") FilterDeviceDTO deviceFilterDTO) {
+    public CompletableFuture<ResponseEntity<Object>> getDevicesOfKeeper(
+            @Parameter(description = keeperInfo) @PathVariable(value = "id") int keeperId,
+            @RequestParam(defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo,
+            @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize,
+            @Parameter(description = filterDescription) @DateTimeFormat(pattern = "yyyy-MM-dd")
+            FilterDeviceDTO deviceFilterDTO) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                KeepingDeviceResponse response = _deviceService.showKeepingDevicesWithPaging(keeperId, pageNo, pageSize,
-                        deviceFilterDTO);
+                KeepingDeviceResponse
+                        response
+                        = _deviceService.showKeepingDevicesWithPaging(keeperId, pageNo, pageSize, deviceFilterDTO);
                 if(response == null) {
                     return new ResponseEntity<>("User does not exist", NOT_FOUND);
                 }
@@ -411,8 +418,9 @@ public class DeviceController {
                     @Content(mediaType = "application/json")
             })
     })
-    public CompletableFuture<ResponseEntity<Object>> updateReturnOwnDevice(@Parameter(
-            description = "Enter request info to confirm return") @RequestBody ReturnKeepDeviceDTO request) {
+    public CompletableFuture<ResponseEntity<Object>> updateReturnOwnDevice(
+            @RequestBody(description = "Enter request info to confirm return (INITIAL STATUS MUST BE TRANSFERRED)")
+            @org.springframework.web.bind.annotation.RequestBody ReturnKeepDeviceDTO request) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 ReturnDeviceResponse response = _deviceService.updateReturnOwnDevice(request);
@@ -443,8 +451,10 @@ public class DeviceController {
                     @Content(mediaType = "application/json")
             })
     })
-    public CompletableFuture<ResponseEntity<Object>> updateReturnKeepDevice(@Parameter(
-            description = "Enter request info to confirm return") @RequestBody ReturnKeepDeviceDTO request) {
+    public CompletableFuture<ResponseEntity<Object>> updateReturnKeepDevice(@RequestBody(
+            description = "Enter request info to confirm return (keeperNo: the order number of the keeper who confirms return)")
+                                                                            @org.springframework.web.bind.annotation.RequestBody
+                                                                            ReturnKeepDeviceDTO request) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 ReturnDeviceResponse response = _deviceService.updateReturnKeepDevice(request);
@@ -458,7 +468,7 @@ public class DeviceController {
         });
     }
 
-    @GetMapping("/owners/suggestion/{id}")
+    @GetMapping("/owners/{id}/suggestion")
     @ResponseBody
     @PreAuthorize(allUsers)
     @Operation(summary = "Retrieve a list of keywords from Own Devices")
@@ -470,24 +480,21 @@ public class DeviceController {
             @Content(mediaType = "application/json")
     })
     })
-    public ResponseEntity<Object> getSuggestKeywordOwnDevices(@Parameter(description = ownerInfo) @PathVariable(
-            value = "id") int ownerId, @Parameter(description = fieldColumnDescription) @RequestParam(
-            name = "column") int fieldColumn, @Parameter(description = filterDescription) @RequestParam(
-            name = "keyword") String keyword, FilterDeviceDTO device) throws InterruptedException, ExecutionException {
-        if(keyword
-                .trim()
-                .isBlank())
-        {
-            return ResponseEntity
-                    .status(BAD_REQUEST)
-                    .body("Keyword must be non-null");
+    public ResponseEntity<Object> getSuggestKeywordOwnDevices(
+            @Parameter(description = ownerInfo) @PathVariable(value = "id") int ownerId,
+            @Parameter(description = fieldColumnDescription) @RequestParam(name = "column") int fieldColumn,
+            @Parameter(description = filterDescription) @RequestParam(name = "keyword")
+            String keyword, FilterDeviceDTO device) throws InterruptedException, ExecutionException {
+        if(keyword.trim().isBlank()) {
+            return ResponseEntity.status(BAD_REQUEST).body("Keyword must be non-null");
         }
-        KeywordSuggestionResponse response = _deviceService.getSuggestKeywordOwnDevices(ownerId, fieldColumn, keyword,
-                device);
+        KeywordSuggestionResponse
+                response
+                = _deviceService.getSuggestKeywordOwnDevices(ownerId, fieldColumn, keyword, device);
         return new ResponseEntity<>(response, OK);
     }
 
-    @GetMapping("/keepers/suggestion/{id}")
+    @GetMapping("/keepers/{id}/suggestion")
     @ResponseBody
     @PreAuthorize(allUsers)
     @Operation(summary = "Retrieve a list of keywords from Keeping Devices")
@@ -499,20 +506,18 @@ public class DeviceController {
             @Content(mediaType = "application/json")
     })
     })
-    public ResponseEntity<Object> getSuggestKeywordKeepingDevices(@Parameter(description = keeperInfo) @PathVariable(
-            value = "id") int keeperId, @Parameter(description = fieldColumnDescription) @RequestParam(
-            name = "column") int fieldColumn, @RequestParam(name = "keyword") String keyword, @Parameter(
-            description = filterDescription) FilterDeviceDTO device) throws InterruptedException, ExecutionException {
-        if(keyword
-                .trim()
-                .isBlank())
-        {
-            return ResponseEntity
-                    .status(BAD_REQUEST)
-                    .body("Keyword must be non-null");
+    public ResponseEntity<Object> getSuggestKeywordKeepingDevices(
+            @Parameter(description = keeperInfo) @PathVariable(value = "id") int keeperId,
+            @Parameter(description = fieldColumnDescription) @RequestParam(name = "column") int fieldColumn,
+            @RequestParam(name = "keyword") String keyword,
+            @Parameter(description = filterDescription) FilterDeviceDTO device)
+            throws InterruptedException, ExecutionException {
+        if(keyword.trim().isBlank()) {
+            return ResponseEntity.status(BAD_REQUEST).body("Keyword must be non-null");
         }
-        KeywordSuggestionResponse response = _deviceService.getSuggestKeywordKeepingDevices(keeperId, fieldColumn,
-                keyword, device);
+        KeywordSuggestionResponse
+                response
+                = _deviceService.getSuggestKeywordKeepingDevices(keeperId, fieldColumn, keyword, device);
         return new ResponseEntity<>(response, OK);
     }
 
@@ -521,7 +526,6 @@ public class DeviceController {
     }
 
     public CompletableFuture<ResponseEntity<Object>> fallbackMethodForResponseEntity(RuntimeException exception) {
-        return CompletableFuture.supplyAsync(
-                () -> new ResponseEntity<>("Something went wrong, please wait a few seconds!", BAD_REQUEST));
+        return CompletableFuture.supplyAsync(() -> new ResponseEntity<>("Something went wrong, please wait a few seconds!", BAD_REQUEST));
     }
 }

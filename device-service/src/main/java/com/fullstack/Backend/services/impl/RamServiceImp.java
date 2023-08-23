@@ -1,14 +1,14 @@
 package com.fullstack.Backend.services.impl;
 
-import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
 import com.fullstack.Backend.models.Ram;
 import com.fullstack.Backend.repositories.interfaces.RamRepository;
 import com.fullstack.Backend.services.RamService;
 import com.fullstack.Backend.utils.dropdowns.RamList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @CacheConfig(cacheNames = {"ram"})
@@ -18,7 +18,6 @@ public class RamServiceImp implements RamService {
     RamRepository _ramRepository;
 
     @Override
-    @Cacheable(key = "size")
     public Ram findBySize(String size) {
         return _ramRepository.findBySize(size);
     }

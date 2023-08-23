@@ -81,6 +81,7 @@ services:
     expose:
       - "8181"
     environment:
+      API_GATEWAY: "api-gateway"
       SPRING_PROFILES_ACTIVE: "docker"
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: "TRACE"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
@@ -93,6 +94,8 @@ services:
     container_name: device-service
     image: jukibach/device-service:latest
     restart: always
+    ports:
+     - "8081:8081"
     environment:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
@@ -108,6 +111,8 @@ services:
   keeper-order-service:
     container_name: keeper-order-service
     image: jukibach/keeper-order-service:latest
+    ports:
+      - "8084:8084"
     environment:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
@@ -124,6 +129,8 @@ services:
   request-service:
     container_name: request-service
     image: jukibach/request-service:latest
+    ports:
+      - "8083:8083"
     environment:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
@@ -153,6 +160,8 @@ services:
   user-service:
     container_name: user-service
     image: jukibach/user-service:latest
+    ports:
+    - "8082:8082"
     environment:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
