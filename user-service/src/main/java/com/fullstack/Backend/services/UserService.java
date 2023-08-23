@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public interface UserService {
     public Optional<User> findById(int id) throws InterruptedException;
 
-    public ResponseEntity<Object> findByUsername(String username);
+    public User findByUsername(String username);
 
     public ResponseEntity<Object> authenticateUser(LoginDTO loginRequest, Authentication
             authentication);
