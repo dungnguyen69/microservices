@@ -21,39 +21,31 @@ public class KeeperOrderServiceImp implements KeeperOrderService {
     KeeperOrderRepository _keeperOrderRepository;
 
     @Override
-    @Cacheable("keeper-orders")
     public List<KeeperOrder> getListByDeviceId(int deviceId) {
-        List<KeeperOrder> lists = _keeperOrderRepository.findKeeperOrderByDeviceId(deviceId);
-        log.info(String.valueOf(lists));
-        return lists;
+        return _keeperOrderRepository.findKeeperOrderByDeviceId(deviceId);
     }
 
     @Override
-    @Cacheable("keeper-order")
     public KeeperOrder findByDeviceIdAndKeeperId(int deviceId, int keeperId) {
         return _keeperOrderRepository.findByDeviceIdAndKeeperId(deviceId, keeperId);
     }
 
     @Override
-    @Caching(evict = {@CacheEvict(value = "keeper-order", allEntries = true), @CacheEvict(value = "keeper-orders", allEntries = true)})
     public void create(KeeperOrder keeperOrder) {
         _keeperOrderRepository.save(keeperOrder);
     }
 
     @Override
-    @Caching(evict = {@CacheEvict(value = "keeper-order", allEntries = true), @CacheEvict(value = "keeper-orders", allEntries = true)})
     public void update(KeeperOrder keeperOrder) {
         _keeperOrderRepository.save(keeperOrder);
     }
 
     @Override
-    @Cacheable("keeper-orders")
     public List<KeeperOrder> findByKeeperId(int keeperId) {
         return _keeperOrderRepository.findByKeeperId(keeperId);
     }
 
     @Override
-    @Caching(evict = {@CacheEvict(value = "keeper-order", allEntries = true), @CacheEvict(value = "keeper-orders", allEntries = true)})
     public void deleteReturnedDevice(int deviceId) {
         List<KeeperOrder> keeperOrderList = _keeperOrderRepository.findByReturnedDevice(deviceId);
         for (KeeperOrder keeperOrder : keeperOrderList) {
