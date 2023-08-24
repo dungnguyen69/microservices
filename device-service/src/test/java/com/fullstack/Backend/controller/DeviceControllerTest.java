@@ -248,7 +248,7 @@ public class DeviceControllerTest {
                 .build();
         Device device = deviceMapper.addDeviceDtoToDevice(newDevice);
         List<ErrorMessage> errorMessages = new ArrayList<>();
-        AddDeviceResponse addDeviceResponse = new AddDeviceResponse(device, true, errorMessages);
+        AddDeviceResponse addDeviceResponse = new AddDeviceResponse(device, true, null);
         when(deviceService.addDevice(refEq(newDevice))).thenReturn(addDeviceResponse);
         String requestBody = ow.writeValueAsString(newDevice);
         MvcResult mvcResult = mockMvc
@@ -344,7 +344,7 @@ public class DeviceControllerTest {
         int deviceId = 0;
         DeleteDeviceResponse response = new DeleteDeviceResponse();
         response.setIsDeletionSuccessful(true);
-        response.setErrorMessage("");
+        response.setErrorMessage(null);
         when(deviceService.deleteDevice(eq(deviceId))).thenReturn(response);
 
         mockMvc
