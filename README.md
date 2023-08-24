@@ -6,3 +6,11 @@
 ```
 ## You must have a folder named mysql-device in the folder where you execute docker-compose to persist data.
 
+## Technologies
+- Kafka
+- Zipkin
+- Eureka server
+- Test container
+- Redis
+- Spring boot
+- MySQL
