@@ -1,7 +1,18 @@
 ---
 version: '3.7'
 services:
-
+  ## MySQL
+  mysql-device:
+    container_name: mysql-device
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456789
+      MYSQL_DATABASE: devicemanagementdb
+    volumes:
+      - ./mysql-device:/data/mysql
+    ports:
+      - 3308:3306
+    restart: always
   ## Redis
   redis:
     container_name: redis
@@ -36,29 +47,6 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-
-  kafka-ui:
-    container_name: kafka-ui
-    image: provectuslabs/kafka-ui:latest
-    ports:
-      - 8080:8080
-    environment:
-      DYNAMIC_CONFIG_ENABLED: 'true'
-    volumes:
-      - ./kui/config.yml:/etc/kafkaui/dynamic_config.yaml
-
-  ## MySQL
-    mysql-device:
-      container_name: mysql-device
-      image: mysql
-      environment:
-        MYSQL_ROOT_PASSWORD: 123456789
-        MYSQL_DATABASE: devicemanagementdb
-      volumes:
-        - ./mysql-device:/data/mysql
-      ports:
-        - 3308:3306
-      restart: always
 
   ## Zipkin
   zipkin:
