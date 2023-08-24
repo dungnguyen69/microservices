@@ -91,7 +91,7 @@ public class RequestController {
 
     @PutMapping("/occupied-requests")
     @Operation(summary = "REMOTE CALL IN MICROSERVICES: Update Request")
-    public void updateRequest(@Parameter(description = requestStatusDescription) @RequestBody Request request)
+    public void updateRequest(@io.swagger.v3.oas.annotations.parameters.RequestBody(description = requestStatusDescription) @RequestBody Request request)
             throws ExecutionException, InterruptedException {
         _requestService.updateRequest(request);
     }
@@ -111,7 +111,7 @@ public class RequestController {
             @RequestParam(defaultValue = DEFAULT_PAGE_SIZE, required = false) int pageSize,
             @RequestParam(defaultValue = DEFAULT_SORT_BY, required = false) String sortBy,
             @RequestParam(defaultValue = DEFAULT_SORT_DIRECTION, required = false) String sortDir,
-            @Parameter(description = "Enter fields to filter or leave it empty")
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Enter fields to filter or leave it empty")
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) RequestFilterDTO requestFilterDTO)
             throws InterruptedException, ExecutionException {
         return _requestService.showRequestListsWithPaging(userId, pageNo, pageSize, sortBy, sortDir, requestFilterDTO);
@@ -130,7 +130,7 @@ public class RequestController {
                             schema = @Schema(implementation = SubmitBookingResponse.class))
             })
     })
-    public CompletableFuture<ResponseEntity<Object>> submitBookingRequest(@Valid @Parameter(
+    public CompletableFuture<ResponseEntity<Object>> submitBookingRequest(@Valid @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Enter a list of requests to submit. \n" + requestStatusDescription) @RequestBody
                                                                           SubmitBookingRequestDTO requests) {
         return CompletableFuture.supplyAsync(() -> {
@@ -186,7 +186,7 @@ public class RequestController {
     })
     })
     public ResponseEntity<Object> updateRequestStatus(
-            @Parameter(description = "Get existing request to update. \n" + requestStatusDescription) @RequestBody
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Get existing request to update. \n" + requestStatusDescription) @RequestBody
             UpdateStatusRequestDTO request) throws InterruptedException, ExecutionException {
         return _requestService.updateRequestStatus(request);
     }
@@ -197,7 +197,7 @@ public class RequestController {
     @CircuitBreaker(name = "user", fallbackMethod = "fallbackMethodForResponseEntity")
     @TimeLimiter(name = "user", fallbackMethod = "fallbackMethodForResponseEntity")
     @Retry(name = "user")
-    @Operation(summary = "Send Extend Duration Request for Keeping Devices")
+    @Operation(summary = "Send Extend Duration Request for Keeping Devices. (Confirm by using updating request status with requestId and requestStatus = 6) ")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Sent Successfully", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = MessageResponse.class))
@@ -206,8 +206,8 @@ public class RequestController {
     })
     })
     public CompletableFuture<ResponseEntity<Object>> extendDurationRequest(
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @Parameter(
-                    description = "Get existing request with EXTENDING status to update. Then confirm by using updateStatus with requestId and requestStatus = 6. \n" + requestStatusDescription)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Get existing request with EXTENDING status to update.\n" + requestStatusDescription)
             ExtendDurationRequestDTO request) {
         return CompletableFuture.supplyAsync(() -> {
             try {

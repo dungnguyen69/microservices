@@ -3,7 +3,6 @@ package com.microservice.notificationservice.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.microservice.notificationservice.validation.annotations.ValidEmail;
 import jakarta.persistence.*;
-import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -19,10 +18,13 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Users",
+@Table(name = "spring_users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "userName"),
-                @UniqueConstraint(columnNames = "email")})
+                @UniqueConstraint(columnNames = "email")},
+        indexes = {
+                @Index(name = "user_id_idx", columnList = "id", unique = true)
+        })
 public class User extends BaseEntity {
     @Column(nullable = false)
     private String badgeId;

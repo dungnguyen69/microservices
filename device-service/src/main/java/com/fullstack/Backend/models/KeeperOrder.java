@@ -13,7 +13,12 @@ import java.util.Date;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "keeper_order")
+@Table(name = "keeper_order",
+                indexes = {
+        @Index(name = "keeper_order_Id_idx", columnList = "id", unique = true),
+        @Index(name = "keeper_Id_idx", columnList = "keeper_Id"),
+        @Index(name = "device_Id_idx", columnList = "device_Id")
+        })
 public class KeeperOrder extends BaseEntity {
     public KeeperOrder(int Id, Date createdDate, Date updatedDate,  int device_Id, int keeper_Id, int keeperNo, Boolean isReturned, Date bookingDate, Date dueDate) {
         super(Id, createdDate, updatedDate);

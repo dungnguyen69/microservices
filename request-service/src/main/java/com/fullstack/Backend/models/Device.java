@@ -5,21 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fullstack.Backend.enums.Origin;
 import com.fullstack.Backend.enums.Project;
 import com.fullstack.Backend.enums.Status;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.Builder;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Getter
 @Setter
@@ -27,7 +14,16 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity()
-@Table(name = "Devices", uniqueConstraints = @UniqueConstraint(columnNames = "serialNumber", name = "serialNumber"))
+@Table(name = "Devices", uniqueConstraints = @UniqueConstraint(columnNames = "serialNumber", name = "serialNumber"),
+        indexes = {
+                @Index(name = "device_id_idx", columnList = "id", unique = true),
+                @Index(name = "platform_Id_idx", columnList = "platform_Id"),
+                @Index(name = "item_type_Id_idx", columnList = "item_type_Id"),
+                @Index(name = "ram_Id_idx", columnList = "ram_Id"),
+                @Index(name = "screen_Id_idx", columnList = "screen_Id"),
+                @Index(name = "storage_Id_idx", columnList = "storage_Id"),
+                @Index(name = "storage_Id_idx", columnList = "owner_Id")
+        })
 public class Device extends BaseEntity {
     @Column(nullable = false)
     private String name;
@@ -36,43 +32,49 @@ public class Device extends BaseEntity {
     @Enumerated(EnumType.ORDINAL)
     private Status status;
 
-    @ManyToOne()
-    @JoinColumn(name = "platform_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "platform_Id_FK"))
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "platform_Id", nullable = false, referencedColumnName = "id", insertable = false,
+            updatable = false, foreignKey = @ForeignKey(name = "platform_Id_FK"))
     @JsonIgnore()
     private Platform platform;
     @Column(name = "platform_Id", nullable = false)
     private int platformId;
 
-    @ManyToOne()
-    @JoinColumn(name = "item_type_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "item_type_Id_FK"))
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_type_Id", nullable = false, referencedColumnName = "id", insertable = false,
+            updatable = false, foreignKey = @ForeignKey(name = "item_type_Id_FK"))
     @JsonIgnore()
     private ItemType itemType;
     @Column(name = "item_type_Id", nullable = false)
     private int itemTypeId;
 
-    @ManyToOne()
-    @JoinColumn(name = "ram_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "ram_Id_FK"))
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ram_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "ram_Id_FK"))
     @JsonIgnore()
     private Ram ram;
     @Column(name = "ram_Id", nullable = false)
     private int ramId;
 
-    @ManyToOne()
-    @JoinColumn(name = "screen_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "screen_Id_FK"))
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "screen_Id", nullable = false, referencedColumnName = "id", insertable = false,
+            updatable = false, foreignKey = @ForeignKey(name = "screen_Id_FK"))
     @JsonIgnore()
     private Screen screen;
     @Column(name = "screen_Id", nullable = false)
     private int screenId;
 
-    @ManyToOne()
-    @JoinColumn(name = "storage_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "storage_Id_FK"))
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "storage_Id", nullable = false, referencedColumnName = "id", insertable = false,
+            updatable = false, foreignKey = @ForeignKey(name = "storage_Id_FK"))
     @JsonIgnore()
     private Storage storage;
     @Column(name = "storage_Id")
     private int storageId;
 
-    @ManyToOne()
-    @JoinColumn(name = "owner_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "owner_Id_FK"))
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false,
+            foreignKey = @ForeignKey(name = "owner_Id_FK"))
     @JsonIgnore()
     private User owner;
     @Column(name = "owner_Id", nullable = false)

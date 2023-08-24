@@ -75,7 +75,7 @@ public class DeviceController {
     })
     public ResponseEntity<Device> getDeviceById(
             @Parameter(description = deviceInfo) @PathVariable(value = "id") int id) {
-        return ResponseEntity.ok().body(_deviceService.getDeviceById(id).orElse(null));
+        return ResponseEntity.ok().body(_deviceService.getDeviceById(id));
     }
 
     @PostMapping

@@ -2,6 +2,7 @@ package com.fullstack.Backend.services.impl;
 
 import com.fullstack.Backend.dto.*;
 import com.fullstack.Backend.enums.Role;
+import com.fullstack.Backend.event.VerificationEvent;
 import com.fullstack.Backend.models.PasswordResetToken;
 import com.fullstack.Backend.models.SystemRole;
 import com.fullstack.Backend.models.User;
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.Authentication;
@@ -68,6 +70,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
     private PasswordResetTokenRepository _passwordResetTokenRepository;
     @Value("${spring.mail.username}")
     private String fromAddress;
+
+    @Autowired
+    private KafkaTemplate<String, VerificationEvent> kafkaTemplate;
 
     @Override
     @Transactional
@@ -148,28 +153,9 @@ public class UserServiceImp implements UserService, UserDetailsService {
         user.setSystemRoles(roles);
         save(user);
         createVerificationToken(user, token);
-        String verifyURL = siteURL + "/email-verification?token=" + token;
-        sendVerificationEmail(user, verifyURL);
+        String verifyURL = baseUrl + "/email-verification?token=" + token;
+        kafkaTemplate.send("verificationTopic", new VerificationEvent(user,verifyURL));
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
-    }
-
-    @Override
-    public void sendVerificationEmail(User user, String verifyURL) throws MessagingException {
-        String toAddress = user.getEmail();
-        String subject = "Please verify your registration";
-        String
-                content
-                = "Dear [[name]],<br>" + "Please click the link below to verify your registration:<br>" + "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>" + "Thank you!<br>";
-
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-        helper.setFrom(fromAddress);
-        helper.setTo(toAddress);
-        helper.setSubject(subject);
-        content = content.replace("[[name]]", user.getFirstName().concat(" " + user.getLastName()));
-        content = content.replace("[[URL]]", verifyURL);
-        helper.setText(content, true);
-        mailSender.send(message);
     }
 
     @Override
@@ -223,8 +209,8 @@ public class UserServiceImp implements UserService, UserDetailsService {
             throws MessagingException {
         VerificationToken newToken = generateNewVerificationToken(existingToken);
         User user = newToken.getUser();
-        String verifyURL = siteURL + "/email-verification?token=" + newToken.getToken();
-        resendVerificationEmail(user, verifyURL);
+        String verifyURL = baseUrl + "/email-verification?token=" + newToken.getToken();
+        kafkaTemplate.send("verificationTopic", new VerificationEvent(user,verifyURL));
         return ResponseEntity.ok(new MessageResponse("Resent successfully!"));
     }
 
@@ -243,13 +229,13 @@ public class UserServiceImp implements UserService, UserDetailsService {
             String
                     newToken
                     = generateResetPasswordToken(existingToken.getToken()); /* Change old token to new token and return it */
-            String verifyURL = siteURL + "/receive-forgot-password?token=" + newToken;
+            String verifyURL = baseUrl + "/receive-forgot-password?token=" + newToken;
             sendResetPasswordEmail(user, verifyURL);
             return ResponseEntity.ok(new MessageResponse("Sent successfully!"));
         }
         PasswordResetToken myToken = new PasswordResetToken(token, user);
         _passwordResetTokenRepository.save(myToken);
-        String verifyURL = siteURL + "/receive-forgot-password?token=" + myToken.getToken();
+        String verifyURL = baseUrl + "/receive-forgot-password?token=" + myToken.getToken();
         sendResetPasswordEmail(user, verifyURL);
         return ResponseEntity.ok(new MessageResponse("Sent successfully!"));
     }
@@ -463,24 +449,6 @@ public class UserServiceImp implements UserService, UserDetailsService {
         }
 
         return (listSize / pageSize) + 1;
-    }
-
-    private void resendVerificationEmail(User user, String verifyURL) throws MessagingException {
-        String toAddress = user.getEmail();
-        String subject = "Resend Verification Email";
-        String
-                content
-                = "Dear [[name]],<br>" + "Please click the link below to verify your registration:<br>" + "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>" + "Thank you!<br>";
-
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-        helper.setFrom(fromAddress);
-        helper.setTo(toAddress);
-        helper.setSubject(subject);
-        content = content.replace("[[name]]", user.getFirstName().concat(" " + user.getLastName()));
-        content = content.replace("[[URL]]", verifyURL);
-        helper.setText(content, true);
-        mailSender.send(message);
     }
 
     private String generateResetPasswordToken(String existingToken) {

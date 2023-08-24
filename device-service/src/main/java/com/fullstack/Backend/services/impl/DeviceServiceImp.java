@@ -17,6 +17,7 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ext.ParamConverter;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -24,15 +25,15 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -52,14 +53,17 @@ import static org.springframework.http.HttpStatus.*;
 
 
 @Service
-@CacheConfig(cacheNames = {"device"})
-@RequiredArgsConstructor
 @Transactional
 public class DeviceServiceImp implements DeviceService {
-
     final static Logger logger = LoggerFactory.getLogger(DeviceServiceImp.class);
-    private final WebClient.Builder webClientBuilder;
-    private final ObservationRegistry observationRegistry;
+    @Autowired
+    private WebClient.Builder webClientBuilder;
+    @Autowired
+    private ObservationRegistry observationRegistry;
+    DeviceServiceImp self;
+    public DeviceServiceImp(@Lazy DeviceServiceImp deviceServiceImp){
+        this.self = deviceServiceImp;
+    }
     @Autowired
     DeviceRepository _deviceRepository;
     @Autowired
@@ -78,10 +82,7 @@ public class DeviceServiceImp implements DeviceService {
     @Override
     public DeviceInWarehouseResponse showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter)
             throws InterruptedException, ExecutionException {
-        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort
-                .by(sortBy)
-                .descending();
-        List<Device> devices = _deviceRepository.findAll(sort);
+        List<Device> devices = self.findAll(sortBy, sortBy);
         List<DeviceDTO> deviceList = getAllDevices(devices, deviceFilter);
         /* Return lists for filtering purposes*/
         List<String> statusList = deviceList.stream().map(DeviceDTO::getStatus).distinct().collect(Collectors.toList());
@@ -140,9 +141,8 @@ public class DeviceServiceImp implements DeviceService {
     @Override
     @Cacheable(value = "detail_device", key = "#deviceId")
     public DetailDeviceResponse getDetailDevice(int deviceId) throws InterruptedException, ExecutionException {
-//        System.out.print("fetching from DB! \n");
         DetailDeviceResponse response = new DetailDeviceResponse();
-        Optional<Device> deviceDetail = getDeviceById(deviceId);
+        Optional<Device> deviceDetail = Optional.ofNullable(self.getDeviceById(deviceId));
 
         if(deviceDetail.isEmpty()) {
             return response;
@@ -181,7 +181,7 @@ public class DeviceServiceImp implements DeviceService {
         ErrorMessage
                 error
                 = new ErrorMessage(NOT_FOUND, "Device does not exist", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()));
-        Optional<Device> deviceDetail = getDeviceById(deviceId);
+        Optional<Device> deviceDetail = Optional.ofNullable(self.getDeviceById(deviceId));
         if(deviceDetail.isEmpty()) {
             errors.add(error);
             detailDeviceResponse.setErrors(errors);
@@ -220,7 +220,6 @@ public class DeviceServiceImp implements DeviceService {
         if(doesDeviceExist(deviceId)) {
             response.setErrorMessage("Device is not existent");
             return response;
-//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, PENDING)) {
             deleteRequestBasedOnStatusAndDevice(deviceId, PENDING);
@@ -232,25 +231,20 @@ public class DeviceServiceImp implements DeviceService {
         if(findRequestBasedOnStatusAndDevice(deviceId, APPROVED)) {
             response.setErrorMessage("Cannot delete by virtue of approved requests for this device");
             return response;
-//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, TRANSFERRED)) {
             response.setErrorMessage("Cannot delete by virtue of transferred requests for this device");
             return response;
-//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         if(findRequestBasedOnStatusAndDevice(deviceId, EXTENDING)) {
             response.setErrorMessage("Cannot delete because someone uses this device");
             return response;
-//            return new ResponseEntity<>(response, NOT_FOUND);
         }
         _deviceRepository.deleteById((long) deviceId);
         response.setIsDeletionSuccessful(true);
         return response;
-//        return new ResponseEntity<>(response, OK);
     }
 
-    @Async
     @Override
     public void exportToExcel(HttpServletResponse response)
             throws IOException, ExecutionException, InterruptedException {
@@ -260,13 +254,13 @@ public class DeviceServiceImp implements DeviceService {
         String headerKey = "Content-Disposition"; // ?
         String headerValue = "attachment; filename=ExportDevices_" + currentDateTime + ".xlsx";
         response.setHeader(headerKey, headerValue);
-        List<Device> devices = _deviceRepository.findAll();
+        Sort sort = Sort.by("id").ascending();
+        List<Device> devices = self.findAll("id", "asc");
         List<DeviceDTO> deviceList = convertEntityToDTO(devices);
         DeviceExcelExporter excelExporter = new DeviceExcelExporter(deviceList);
         excelExporter.export(response);
     }
 
-    @Async
     @Override
     public void exportToExcelForOwner(int ownerId, HttpServletResponse response)
             throws IOException, ExecutionException, InterruptedException {
@@ -369,12 +363,21 @@ public class DeviceServiceImp implements DeviceService {
     @Override
     public KeywordSuggestionResponse getSuggestKeywordDevices(int fieldColumn, String keyword, FilterDeviceDTO deviceFilter)
             throws InterruptedException, ExecutionException {
-        List<Device> devices = _deviceRepository.findAll();
+        Sort sort = Sort.by("id").ascending();
+        List<Device> devices = self.findAll("id", "asc");
         List<DeviceDTO> deviceList = getAllDevices(devices, deviceFilter);
         Set<String> keywordList = selectColumnForKeywordSuggestion(deviceList, keyword, fieldColumn);
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
         return response;
+    }
+
+//    @Cacheable(value = "devices", key = "{#sortBy, #sortDir}")
+    public List<Device> findAll(String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort
+                .by(sortBy)
+                .descending();
+        return _deviceRepository.findAll(sort);
     }
 
     @Override
@@ -467,7 +470,7 @@ public class DeviceServiceImp implements DeviceService {
             return null;
         }
 
-        Optional<Device> device = getDeviceById(input.getDeviceId());
+        Optional<Device> device = Optional.ofNullable(self.getDeviceById(input.getDeviceId()));
         if(device.isEmpty()) {
             return null;
         }
@@ -1015,7 +1018,7 @@ public class DeviceServiceImp implements DeviceService {
         }
 
         for (KeeperOrder keeperOrder : keeperOrderList) {
-            Optional<Device> device = getDeviceById(keeperOrder.getDevice().getId());
+            Optional<Device> device = Optional.ofNullable(self.getDeviceById(keeperOrder.getDevice().getId()));
             if(device.isEmpty()) {
                 break;
             }
@@ -1403,7 +1406,8 @@ public class DeviceServiceImp implements DeviceService {
     }
 
     @Override
-    public Optional<Device> getDeviceById(int deviceId) {
+//    @Cacheable(value = "device", key = "#deviceId")
+    public Device getDeviceById(int deviceId) {
         return _deviceRepository.findById(deviceId);
     }
 

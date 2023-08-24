@@ -18,8 +18,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     public static final String FIND_DEVICE_BY_SERIALNUMBER_EXCEPT_UPDATED_DEVICE = """
             SELECT d FROM Device d WHERE serialNumber = :serialNumber AND Id <> :deviceId
             """;
-
-    public Optional<Device> findById(int deviceId);
+    public Device findById(int deviceId);
 
     // For update device information when importing
     @Query(FIND_DEVICE_BY_SERIALNUMBER)

@@ -23,9 +23,6 @@ public interface UserService {
     public ResponseEntity<Object> registerUser(RegisterDTO registerRequest, String siteURL) throws
             MessagingException, UnsupportedEncodingException;
 
-    public void sendVerificationEmail(User user, String siteURL) throws
-            MessagingException, UnsupportedEncodingException;
-
     public ResponseEntity<Object> verify(String verificationCode) throws ExecutionException, InterruptedException;
 
     public ResponseEntity<Object> showUsersWithPaging(int pageIndex, int pageSize, String

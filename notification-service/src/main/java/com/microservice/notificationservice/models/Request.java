@@ -15,7 +15,15 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "Requests")
+@Table(name = "Requests",
+        indexes = {
+                @Index(name = "request_id_idx", columnList = "id", unique = true),
+                @Index(name = "requester_Id_idx", columnList = "requester_Id"),
+                @Index(name = "currentKeeper_Id_Id_idx", columnList = "currentKeeper_Id"),
+                @Index(name = "nextKeeper_Id_idx", columnList = "nextKeeper_Id"),
+                @Index(name = "accepter_Id_idx", columnList = "accepter_Id"),
+                @Index(name = "device_Id_idx", columnList = "device_Id")
+        })
 public class Request extends BaseEntity {
     @Column(nullable = false)
     private String requestId;

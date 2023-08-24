@@ -1,7 +1,7 @@
 package com.fullstack.Backend.models;
 
-import lombok.Data;
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Calendar;
@@ -10,7 +10,10 @@ import java.util.Date;
 @Data
 @Entity()
 @NoArgsConstructor
-@Table(name = "VerificationToken")
+@Table(name = "VerificationToken", indexes = {
+        @Index(name = "verification_token_id", columnList = "id", unique = true),
+        @Index(name = "user_id_idx", columnList = "user_id")
+})
 public class VerificationToken {
     private static final int EXPIRATION = 60 * 24; /* Last only 24h */
 
@@ -27,6 +30,13 @@ public class VerificationToken {
 
     private Date expiryDate;
 
+    public VerificationToken(final String token, final User user) {
+        super();
+        this.token = token;
+        this.user = user;
+        this.expiryDate = calculateExpiryDate(EXPIRATION);
+    }
+
     private Date calculateExpiryDate(final int expiryTimeInMinutes) {
         final Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(new Date().getTime());
@@ -36,13 +46,6 @@ public class VerificationToken {
 
     public void updateToken(final String token) {
         this.token = token;
-        this.expiryDate = calculateExpiryDate(EXPIRATION);
-    }
-
-    public VerificationToken(final String token, final User user) {
-        super();
-        this.token = token;
-        this.user = user;
         this.expiryDate = calculateExpiryDate(EXPIRATION);
     }
 

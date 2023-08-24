@@ -2,7 +2,6 @@ package com.fullstack.Backend.services;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import com.fullstack.Backend.dto.device.*;
@@ -52,5 +51,5 @@ public interface DeviceService {
 
     public KeepingDeviceResponse showKeepingDevicesWithPaging(int keeperId, int pageIndex, int pageSize, FilterDeviceDTO dto) throws ExecutionException, InterruptedException;
 
-    public Optional<Device> getDeviceById(int deviceId);
+    public Device getDeviceById(int deviceId);
 }
