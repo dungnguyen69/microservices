@@ -18,7 +18,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "spring_users",
+@Table(name = "Users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "userName"),
                 @UniqueConstraint(columnNames = "email")},

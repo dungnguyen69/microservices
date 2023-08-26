@@ -67,7 +67,7 @@ services:
     environment:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
-      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_PROFILES_ACTIVE: "local,docker"
     depends_on:
       - zipkin
 
@@ -80,7 +80,7 @@ services:
       - "8181"
     environment:
       API_GATEWAY: "api-gateway"
-      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_PROFILES_ACTIVE: "local,docker"
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: "TRACE"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
     depends_on:
@@ -98,7 +98,7 @@ services:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
-      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_PROFILES_ACTIVE: "local, docker"
     depends_on:
       - discovery-server
       - api-gateway
@@ -115,7 +115,7 @@ services:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
-      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_PROFILES_ACTIVE: "local, docker"
     depends_on:
       - mysql-device
       - broker
@@ -133,7 +133,7 @@ services:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
-      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_PROFILES_ACTIVE: "local, docker"
     depends_on:
       - mysql-device
       - discovery-server
@@ -147,7 +147,7 @@ services:
     image: jukibach/notification-service:latest
     environment:
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
-      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_PROFILES_ACTIVE: "local,docker"
     depends_on:
       - zipkin
       - broker
@@ -164,7 +164,7 @@ services:
       EUREKA_SERVER: "discovery-server"
       MANAGEMENT.ZIPKIN.TRACING.ENDPOINT:  "http://zipkin:9411/api/v2/spans"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-device:3306/devicemanagementdb"
-      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_PROFILES_ACTIVE: "local,docker"
     depends_on:
       - mysql-device
       - discovery-server
