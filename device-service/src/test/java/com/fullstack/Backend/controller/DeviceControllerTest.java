@@ -521,7 +521,7 @@ public class DeviceControllerTest {
         dto.setOrigin("EXTERNAL");
         dto.setOwner("ADMIN");
         dto.setKeeper("USER");
-        dto.setKeeperNo(1);
+        dto.setKeeperNumber(1);
         dto.setBookingDate(new Date());
         dto.setReturnDate(new Date());
         dto.setMaxExtendingReturnDate(new Date());

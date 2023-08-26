@@ -6,6 +6,7 @@ import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
 import com.fullstack.Backend.enums.Origin;
 import com.fullstack.Backend.enums.Project;
 import com.fullstack.Backend.enums.Status;
+import com.fullstack.Backend.keyword.*;
 import com.fullstack.Backend.mappers.DeviceMapper;
 import com.fullstack.Backend.models.*;
 import com.fullstack.Backend.repositories.interfaces.DeviceRepository;
@@ -17,8 +18,6 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.ext.ParamConverter;
-import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -26,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.Lazy;
@@ -56,14 +54,7 @@ import static org.springframework.http.HttpStatus.*;
 @Transactional
 public class DeviceServiceImp implements DeviceService {
     final static Logger logger = LoggerFactory.getLogger(DeviceServiceImp.class);
-    @Autowired
-    private WebClient.Builder webClientBuilder;
-    @Autowired
-    private ObservationRegistry observationRegistry;
     DeviceServiceImp self;
-    public DeviceServiceImp(@Lazy DeviceServiceImp deviceServiceImp){
-        this.self = deviceServiceImp;
-    }
     @Autowired
     DeviceRepository _deviceRepository;
     @Autowired
@@ -78,6 +69,14 @@ public class DeviceServiceImp implements DeviceService {
     StorageService _storageService;
     @Autowired
     DeviceMapper deviceMapper;
+    @Autowired
+    private WebClient.Builder webClientBuilder;
+    @Autowired
+    private ObservationRegistry observationRegistry;
+
+    public DeviceServiceImp(@Lazy DeviceServiceImp deviceServiceImp) {
+        this.self = deviceServiceImp;
+    }
 
     @Override
     public DeviceInWarehouseResponse showDevicesWithPaging(int pageIndex, int pageSize, String sortBy, String sortDir, FilterDeviceDTO deviceFilter)
@@ -372,7 +371,7 @@ public class DeviceServiceImp implements DeviceService {
         return response;
     }
 
-//    @Cacheable(value = "devices", key = "{#sortBy, #sortDir}")
+    //    @Cacheable(value = "devices", key = "{#sortBy, #sortDir}")
     public List<Device> findAll(String sortBy, String sortDir) {
         Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort
                 .by(sortBy)
@@ -586,7 +585,7 @@ public class DeviceServiceImp implements DeviceService {
     public KeywordSuggestionResponse getSuggestKeywordKeepingDevices(int keeperId, int fieldColumn, String keyword, FilterDeviceDTO deviceFilter)
             throws InterruptedException, ExecutionException {
         List<KeepingDeviceDTO> deviceList = getDevicesOfKeeper(keeperId, deviceFilter);
-        Set<String> keywordList = selectColumnForKeepingDevicesKeywordSuggestion(deviceList, keyword, fieldColumn);
+        Set<String> keywordList = selectColumnForKeywordSuggestion(deviceList, keyword, fieldColumn);
         KeywordSuggestionResponse response = new KeywordSuggestionResponse();
         response.setKeywordList(keywordList);
         return response;
@@ -864,23 +863,24 @@ public class DeviceServiceImp implements DeviceService {
         return devices;
     }
 
-    private Set<String> selectColumnForKeywordSuggestion(List<DeviceDTO> deviceList, String keyword, int fieldColumn) {
+    private Set<String> selectColumnForKeywordSuggestion(List<? extends ReadableDeviceDTO> deviceList, String keyword, int fieldColumn) {
         Set<String> keywordList = new HashSet<>();
         Stream<String> mappedDeviceList = null;
+        KeywordSuggestion keywordSuggestion = new KeywordSuggestion();
+        keywordSuggestion.add(deviceList);
         switch (fieldColumn) { /*Fetch only one column*/
-            case DEVICE_NAME_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getDeviceName);
-            case DEVICE_PLATFORM_NAME_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getPlatformName);
-            case DEVICE_PLATFORM_VERSION_COLUMN ->
-                    mappedDeviceList = deviceList.stream().map(DeviceDTO::getPlatformVersion);
-            case DEVICE_RAM_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getRamSize);
-            case DEVICE_SCREEN_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getScreenSize);
-            case DEVICE_STORAGE_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getStorageSize);
-            case DEVICE_OWNER_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getOwner);
-            case DEVICE_INVENTORY_NUMBER_COLUMN ->
-                    mappedDeviceList = deviceList.stream().map(DeviceDTO::getInventoryNumber);
-            case DEVICE_SERIAL_NUMBER_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getSerialNumber);
-            case DEVICE_KEEPER_COLUMN -> mappedDeviceList = deviceList.stream().map(DeviceDTO::getKeeper);
+            case DEVICE_NAME_COLUMN -> keywordSuggestion.setStrategy(new NameSuggestion());
+            case DEVICE_PLATFORM_NAME_COLUMN -> keywordSuggestion.setStrategy(new PlatformNameSuggestion());
+            case DEVICE_PLATFORM_VERSION_COLUMN -> keywordSuggestion.setStrategy(new PlatformVersionSuggestion());
+            case DEVICE_RAM_COLUMN -> keywordSuggestion.setStrategy(new RamSuggestion());
+            case DEVICE_SCREEN_COLUMN -> keywordSuggestion.setStrategy(new ScreenSuggestion());
+            case DEVICE_STORAGE_COLUMN -> keywordSuggestion.setStrategy(new StorageSuggestion());
+            case DEVICE_OWNER_COLUMN -> keywordSuggestion.setStrategy(new OwnerSuggestion());
+            case DEVICE_INVENTORY_NUMBER_COLUMN -> keywordSuggestion.setStrategy(new InventoryNumberSuggestion());
+            case DEVICE_SERIAL_NUMBER_COLUMN -> keywordSuggestion.setStrategy(new SerialNumberSuggestion());
+            case DEVICE_KEEPER_COLUMN -> keywordSuggestion.setStrategy(new KeeperSuggestion());
         }
+        mappedDeviceList = keywordSuggestion.suggest();
         if(mappedDeviceList != null) {
             keywordList = mappedDeviceList
                     .filter(element -> element.toLowerCase().contains(keyword.strip().toLowerCase()))
@@ -890,33 +890,32 @@ public class DeviceServiceImp implements DeviceService {
         return keywordList;
     }
 
-    private Set<String> selectColumnForKeepingDevicesKeywordSuggestion(List<KeepingDeviceDTO> deviceList, String keyword, int fieldColumn) {
-        Set<String> keywordList = new HashSet<>();
-        Stream<String> mappedDeviceList = null;
-        switch (fieldColumn) { /*Fetch only one column*/
-            case DEVICE_NAME_COLUMN -> mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getDeviceName);
-            case DEVICE_PLATFORM_NAME_COLUMN ->
-                    mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getPlatformName);
-            case DEVICE_PLATFORM_VERSION_COLUMN ->
-                    mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getPlatformVersion);
-            case DEVICE_RAM_COLUMN -> mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getRamSize);
-            case DEVICE_SCREEN_COLUMN -> mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getScreenSize);
-            case DEVICE_STORAGE_COLUMN -> mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getStorageSize);
-            case DEVICE_OWNER_COLUMN -> mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getOwner);
-            case DEVICE_INVENTORY_NUMBER_COLUMN ->
-                    mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getInventoryNumber);
-            case DEVICE_SERIAL_NUMBER_COLUMN ->
-                    mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getSerialNumber);
-            case DEVICE_KEEPER_COLUMN -> mappedDeviceList = deviceList.stream().map(KeepingDeviceDTO::getKeeper);
-        }
-        if(mappedDeviceList != null) {
-            keywordList = mappedDeviceList
-                    .filter(element -> element.toLowerCase().contains(keyword.strip().toLowerCase()))
-                    .limit(20)
-                    .collect(Collectors.toSet());
-        }
-        return keywordList;
-    }
+//    private Set<String> selectColumnForKeepingDevicesKeywordSuggestion(List<KeepingDeviceDTO> deviceList, String keyword, int fieldColumn) {
+//        Set<String> keywordList = new HashSet<>();
+//        Stream<String> mappedDeviceList = null;
+//        KeywordSuggestion keywordSuggestion = new KeywordSuggestion();
+//        keywordSuggestion.add(deviceList);
+//        switch (fieldColumn) { /*Fetch only one column*/
+//            case DEVICE_NAME_COLUMN -> keywordSuggestion.setStrategy(new NameSuggestion());
+//            case DEVICE_PLATFORM_NAME_COLUMN -> keywordSuggestion.setStrategy(new PlatformNameSuggestion());
+//            case DEVICE_PLATFORM_VERSION_COLUMN -> keywordSuggestion.setStrategy(new PlatformVersionSuggestion());
+//            case DEVICE_RAM_COLUMN -> keywordSuggestion.setStrategy(new RamSuggestion());
+//            case DEVICE_SCREEN_COLUMN -> keywordSuggestion.setStrategy(new ScreenSuggestion());
+//            case DEVICE_STORAGE_COLUMN -> keywordSuggestion.setStrategy(new StorageSuggestion());
+//            case DEVICE_OWNER_COLUMN -> keywordSuggestion.setStrategy(new OwnerSuggestion());
+//            case DEVICE_INVENTORY_NUMBER_COLUMN -> keywordSuggestion.setStrategy(new InventoryNumberSuggestion());
+//            case DEVICE_SERIAL_NUMBER_COLUMN -> keywordSuggestion.setStrategy(new SerialNumberSuggestion());
+//            case DEVICE_KEEPER_COLUMN -> keywordSuggestion.setStrategy(new KeeperSuggestion());
+//        }
+//        mappedDeviceList = keywordSuggestion.suggest();
+//        if(mappedDeviceList != null) {
+//            keywordList = mappedDeviceList
+//                    .filter(element -> element.toLowerCase().contains(keyword.strip().toLowerCase()))
+//                    .limit(20)
+//                    .collect(Collectors.toSet());
+//        }
+//        return keywordList;
+//    }
 
     private Boolean useNonExistent(String owner) {
         return findUserByName(owner) == null;
@@ -1009,7 +1008,7 @@ public class DeviceServiceImp implements DeviceService {
 
     private List<KeepingDeviceDTO> getDevicesOfKeeper(int keeperId, FilterDeviceDTO deviceFilter)
             throws ExecutionException, InterruptedException {
-        formatFilter(deviceFilter); /* Remove spaces and make input text become lowercase*/
+        formatFilter(deviceFilter);
         List<KeeperOrder> keeperOrderList = Arrays.asList(findByKeeperId(keeperId));
         List<KeepingDeviceDTO> keepingDeviceList = new ArrayList<>();
 
@@ -1165,14 +1164,14 @@ public class DeviceServiceImp implements DeviceService {
             if(deviceFilter.getKeeperNo().equalsIgnoreCase("less than 3")) {
                 devices = devices
                         .stream()
-                        .filter(device -> device.getKeeperNo() < 3 && (device
+                        .filter(device -> device.getKeeperNumber() < 3 && (device
                                 .getStatus()
                                 .equalsIgnoreCase("OCCUPIED") || device.getStatus().equalsIgnoreCase("VACANT")))
                         .collect(Collectors.toList());
             } else {
                 devices = devices
                         .stream()
-                        .filter(device -> device.getKeeperNo() == 3 && device.getStatus().equalsIgnoreCase("OCCUPIED"))
+                        .filter(device -> device.getKeeperNumber() == 3 && device.getStatus().equalsIgnoreCase("OCCUPIED"))
                         .collect(Collectors.toList());
             }
         }
