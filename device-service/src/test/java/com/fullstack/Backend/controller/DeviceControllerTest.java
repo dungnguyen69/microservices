@@ -52,16 +52,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 public class DeviceControllerTest {
     private static final String END_POINT = "/api/devices";
-    private MockMvc mockMvc;
-    private final ObjectWriter ow = new ObjectMapper()
-            .writer()
-            .withDefaultPrettyPrinter();
+    private final ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
     private final MediaType MEDIA_TYPE_JSON_UTF8 = new MediaType("application", "json", StandardCharsets.UTF_8);
+    private final DeviceMapper deviceMapper = new DeviceMapperImp();
+    private MockMvc mockMvc;
     @Mock
     private DeviceService deviceService;
     @InjectMocks
     private DeviceController deviceController;
-    private final DeviceMapper deviceMapper = new DeviceMapperImp();
     private Device device;
     private List<DeviceDTO> deviceList;
     private List<String> statusList;
@@ -76,10 +74,7 @@ public class DeviceControllerTest {
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(deviceController)
-                .alwaysDo(print())
-                .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(deviceController).alwaysDo(print()).build();
         HashSet<String> keywordList = new HashSet<>(List.of("Air pod", "Mac air 11"));
         ownerId = 1;
         device = Device
@@ -145,26 +140,10 @@ public class DeviceControllerTest {
                 .UpdatedDate(null)
                 .build();
         deviceList = List.of(mockDevice1, mockDevice2);
-        statusList = deviceList
-                .stream()
-                .map(DeviceDTO::getStatus)
-                .distinct()
-                .collect(Collectors.toList());
-        originList = deviceList
-                .stream()
-                .map(DeviceDTO::getOrigin)
-                .distinct()
-                .collect(Collectors.toList());
-        projectList = deviceList
-                .stream()
-                .map(DeviceDTO::getProject)
-                .distinct()
-                .collect(Collectors.toList());
-        itemTypeList = deviceList
-                .stream()
-                .map(DeviceDTO::getItemType)
-                .distinct()
-                .collect(Collectors.toList());
+        statusList = deviceList.stream().map(DeviceDTO::getStatus).distinct().collect(Collectors.toList());
+        originList = deviceList.stream().map(DeviceDTO::getOrigin).distinct().collect(Collectors.toList());
+        projectList = deviceList.stream().map(DeviceDTO::getProject).distinct().collect(Collectors.toList());
+        itemTypeList = deviceList.stream().map(DeviceDTO::getItemType).distinct().collect(Collectors.toList());
         keeperNumberOptions = List.of(new String[]{"LESS THAN 3", "EQUAL TO 3"});
         keywordSuggestionResponse = new KeywordSuggestionResponse();
         filterDeviceDTO = new FilterDeviceDTO();
@@ -172,13 +151,14 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Show List of Devices using Pagination When making GET request to endpoint: /api/devices/warehouse")
+    @DisplayName(
+            "Should Show List of Devices using Pagination When making GET request to endpoint: /api/devices/warehouse")
     public void shouldShowDevicesWithPagination() throws Exception {
-        DeviceInWarehouseResponse deviceResponse = new DeviceInWarehouseResponse(deviceList, statusList, originList,
-                projectList, itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
+        DeviceInWarehouseResponse
+                deviceResponse
+                = new DeviceInWarehouseResponse(deviceList, statusList, originList, projectList, itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
-        when(deviceService.showDevicesWithPaging(eq(1), eq(2), eq("id"), eq("desc"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(deviceResponse);
+        when(deviceService.showDevicesWithPaging(eq(1), eq(2), eq("id"), eq("desc"), Mockito.any(FilterDeviceDTO.class))).thenReturn(deviceResponse);
 
         String requestURI = END_POINT + "/warehouse?pageNo=1&pageSize=2";
         this.mockMvc
@@ -209,8 +189,9 @@ public class DeviceControllerTest {
                 .projectId(1)
                 .comments(null)
                 .build();
-        List<ErrorMessage> errors = new ArrayList<>(
-                List.of(new ErrorMessage(BAD_REQUEST, "Invalid", new Date().toString())));
+        List<ErrorMessage>
+                errors
+                = new ArrayList<>(List.of(new ErrorMessage(BAD_REQUEST, "Invalid", new Date().toString())));
         when(deviceService.addDevice(refEq(newDevice))).thenReturn(new AddDeviceResponse(errors));
         String requestBody = ow.writeValueAsString(newDevice);
 
@@ -222,9 +203,7 @@ public class DeviceControllerTest {
                         .characterEncoding("utf-8"))
                 .andReturn();
 
-        mockMvc
-                .perform(asyncDispatch(mvcResult))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -258,9 +237,7 @@ public class DeviceControllerTest {
                         .accept(MEDIA_TYPE_JSON_UTF8)
                         .characterEncoding("utf-8"))
                 .andReturn();
-        mockMvc
-                .perform(asyncDispatch(mvcResult))
-                .andExpect(status().isOk());
+        mockMvc.perform(asyncDispatch(mvcResult)).andExpect(status().isOk());
     }
 
     @Test
@@ -339,7 +316,8 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Delete Device Successfully When making DELETE request to endpoint: /api/devices/warehouse/{id}")
+    @DisplayName(
+            "Should Delete Device Successfully When making DELETE request to endpoint: /api/devices/warehouse/{id}")
     public void shouldReturn200WhenDeleteDevice() throws Exception {
         int deviceId = 0;
         DeleteDeviceResponse response = new DeleteDeviceResponse();
@@ -347,17 +325,15 @@ public class DeviceControllerTest {
         response.setErrorMessage(null);
         when(deviceService.deleteDevice(eq(deviceId))).thenReturn(response);
 
-        mockMvc
-                .perform(delete(END_POINT + "/warehouse/" + deviceId))
-                .andExpect(status().isOk());
+        mockMvc.perform(delete(END_POINT + "/warehouse/" + deviceId)).andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("Should Retrieve List of Keywords When making GET request to endpoint: /api/devices/warehouse/suggestion")
+    @DisplayName(
+            "Should Retrieve List of Keywords When making GET request to endpoint: /api/devices/warehouse/suggestion")
     public void shouldSuggestKeywordDevices() throws Exception {
 
-        when(deviceService.getSuggestKeywordDevices(eq(0), eq("a"), Mockito.any(FilterDeviceDTO.class))).thenReturn(
-                keywordSuggestionResponse);
+        when(deviceService.getSuggestKeywordDevices(eq(0), eq("a"), Mockito.any(FilterDeviceDTO.class))).thenReturn(keywordSuggestionResponse);
 
         mockMvc
                 .perform(get(END_POINT + "/warehouse/suggestion")
@@ -371,7 +347,8 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Return Drop-down Values When making GET request to endpoint: /api/devices/warehouse/drop-down-values")
+    @DisplayName(
+            "Should Return Drop-down Values When making GET request to endpoint: /api/devices/warehouse/drop-down-values")
     public void shouldReturnDropdownValues() throws Exception {
         ProjectionFactory factory = new SpelAwareProxyProjectionFactory();
         PlatformList platform = factory.createProjection(PlatformList.class);
@@ -400,8 +377,9 @@ public class DeviceControllerTest {
         List<StatusList> statusList = List.of(status);
         List<ProjectList> projectList = List.of(project);
         List<OriginList> originList = List.of(origin);
-        DropdownValuesResponse response = new DropdownValuesResponse(statusList, itemTypeList, originList, platformList,
-                screenList, projectList, storageList, ramList);
+        DropdownValuesResponse
+                response
+                = new DropdownValuesResponse(statusList, itemTypeList, originList, platformList, screenList, projectList, storageList, ramList);
 
         when(deviceService.getDropDownValues()).thenReturn(response);
 
@@ -416,11 +394,11 @@ public class DeviceControllerTest {
     @Test
     @DisplayName("Should Show List of Devices of Owner When making GET request to endpoint: /api/devices/owners/{id}")
     public void shouldShowDevicesOfOwner() throws Exception {
-        OwnDeviceResponse response = new OwnDeviceResponse(deviceList, statusList, originList, projectList,
-                itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
+        OwnDeviceResponse
+                response
+                = new OwnDeviceResponse(deviceList, statusList, originList, projectList, itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
-        when(deviceService.showOwnDevicesWithPaging(eq(ownerId), eq(1), eq(2), eq("id"), eq("desc"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(response);
+        when(deviceService.showOwnDevicesWithPaging(eq(ownerId), eq(1), eq(2), eq("id"), eq("desc"), Mockito.any(FilterDeviceDTO.class))).thenReturn(response);
 
         String requestURI = END_POINT + "/owners/" + ownerId + "?pageNo=1&pageSize=2";
         this.mockMvc.perform(get(requestURI)
@@ -444,7 +422,8 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Return Device for Previous Keeper When making PUT request to endpoint: /api/devices/keepers/return")
+    @DisplayName(
+            "Should Return Device for Previous Keeper When making PUT request to endpoint: /api/devices/keepers/return")
     public void shouldUpdateReturnKeepDevice() throws Exception {
         ReturnDeviceResponse response = new ReturnDeviceResponse();
         List<String> oldKeepers = new ArrayList<>();
@@ -529,11 +508,11 @@ public class DeviceControllerTest {
         dto.setCreatedDate(new Date());
         dto.setUpdatedDate(new Date());
 
-        KeepingDeviceResponse response = new KeepingDeviceResponse(List.of(dto), statusList, originList, projectList,
-                itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
+        KeepingDeviceResponse
+                response
+                = new KeepingDeviceResponse(List.of(dto), statusList, originList, projectList, itemTypeList, keeperNumberOptions, 1, 2, 2, 1);
 
-        when(deviceService.showKeepingDevicesWithPaging(eq(ownerId), eq(1), eq(2),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(response);
+        when(deviceService.showKeepingDevicesWithPaging(eq(ownerId), eq(1), eq(2), Mockito.any(FilterDeviceDTO.class))).thenReturn(response);
 
         String requestURI = END_POINT + "/keepers/" + ownerId + "?pageNo=1&pageSize=2";
 
@@ -553,14 +532,14 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Retrieve List of Keywords for Owner When making GET request to endpoint: /api/devices/owners/suggestion/{id}")
+    @DisplayName(
+            "Should Retrieve List of Keywords for Owner When making GET request to endpoint: /api/devices/owners/suggestion/{id}")
     public void shouldSuggestKeywordDevicesForOwner() throws Exception {
 
-        when(deviceService.getSuggestKeywordOwnDevices(eq(ownerId), eq(0), eq("a"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(keywordSuggestionResponse);
+        when(deviceService.getSuggestKeywordOwnDevices(eq(ownerId), eq(0), eq("a"), Mockito.any(FilterDeviceDTO.class))).thenReturn(keywordSuggestionResponse);
 
         mockMvc
-                .perform(get(END_POINT + "/owners/suggestion/" + ownerId)
+                .perform(get(END_POINT + "/owners/" + ownerId + "/suggestion")
                         .contentType(MEDIA_TYPE_JSON_UTF8)
                         .param("column", String.valueOf(0))
                         .param("keyword", "a")
@@ -571,14 +550,14 @@ public class DeviceControllerTest {
     }
 
     @Test
-    @DisplayName("Should Retrieve List of Keywords for Keeper When making GET request to endpoint: /api/devices/keepers/suggestion/{id}")
+    @DisplayName(
+            "Should Retrieve List of Keywords for Keeper When making GET request to endpoint: /api/devices/keepers/suggestion/{id}")
     public void shouldSuggestKeywordDevicesForKeeper() throws Exception {
 
-        when(deviceService.getSuggestKeywordKeepingDevices(eq(ownerId), eq(0), eq("a"),
-                Mockito.any(FilterDeviceDTO.class))).thenReturn(keywordSuggestionResponse);
+        when(deviceService.getSuggestKeywordKeepingDevices(eq(ownerId), eq(0), eq("a"), Mockito.any(FilterDeviceDTO.class))).thenReturn(keywordSuggestionResponse);
 
         mockMvc
-                .perform(get(END_POINT + "/keepers/suggestion/" + ownerId)
+                .perform(get(END_POINT + "/keepers/" + ownerId + "/suggestion")
                         .contentType(MEDIA_TYPE_JSON_UTF8)
                         .param("column", String.valueOf(0))
                         .param("keyword", "a")

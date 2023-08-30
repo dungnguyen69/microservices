@@ -2,6 +2,7 @@ package com.fullstack.Backend.responses.device;
 
 import com.fullstack.Backend.dto.device.KeepingDeviceDTO;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder(toBuilder = true)
 public class KeepingDeviceResponse {
     private List<KeepingDeviceDTO> devicesList;
     private List<String> statusList;

@@ -11,15 +11,13 @@ import com.fullstack.Backend.utils.dropdowns.ScreenList;
 import com.fullstack.Backend.utils.dropdowns.StatusList;
 import com.fullstack.Backend.utils.dropdowns.StorageList;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder(toBuilder = true)
 public class DropdownValuesResponse {
 	List<StatusList> statusList;
 	List<ItemTypeList> itemTypeList;

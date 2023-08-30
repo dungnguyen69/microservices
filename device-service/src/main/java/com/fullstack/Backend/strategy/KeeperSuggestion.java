@@ -1,4 +1,4 @@
-package com.fullstack.Backend.keyword;
+package com.fullstack.Backend.strategy;
 
 import com.fullstack.Backend.dto.device.ReadableDeviceDTO;
 

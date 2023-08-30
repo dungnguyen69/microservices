@@ -6,12 +6,12 @@ import com.fullstack.Backend.dto.request.ReturnKeepDeviceDTO;
 import com.fullstack.Backend.enums.Origin;
 import com.fullstack.Backend.enums.Project;
 import com.fullstack.Backend.enums.Status;
-import com.fullstack.Backend.keyword.*;
 import com.fullstack.Backend.mappers.DeviceMapper;
 import com.fullstack.Backend.models.*;
 import com.fullstack.Backend.repositories.interfaces.DeviceRepository;
 import com.fullstack.Backend.responses.device.*;
 import com.fullstack.Backend.services.*;
+import com.fullstack.Backend.strategy.*;
 import com.fullstack.Backend.utils.*;
 import com.fullstack.Backend.utils.dropdowns.*;
 import io.micrometer.observation.Observation;
@@ -122,14 +122,6 @@ public class DeviceServiceImp implements DeviceService {
         logger.debug("New Device: {}", newDevice);
         saveDevice(newDevice);
         return new AddDeviceResponse(newDevice, true, null);
-    }
-
-    private void doLongRunningTask() {
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -291,15 +283,17 @@ public class DeviceServiceImp implements DeviceService {
         String[] platformList = _platformService.getPlatformNameVersionList().toArray(String[]::new);
         String[] screenList = _screenService.getScreenList().toArray(String[]::new);
         String[] storageList = _storageService.getStorageList().toArray(String[]::new);
-        DropDownListsDTO dropDownListsDTO = new DropDownListsDTO();
-        dropDownListsDTO.setStatusList(statusList);
-        dropDownListsDTO.setProjectList(projectList);
-        dropDownListsDTO.setOriginList(originList);
-        dropDownListsDTO.setItemTypeList(itemTypeList);
-        dropDownListsDTO.setRamList(ramList);
-        dropDownListsDTO.setPlatformList(platformList);
-        dropDownListsDTO.setScreenList(screenList);
-        dropDownListsDTO.setStorageList(storageList);
+        DropDownListsDTO dropDownListsDTO = DropDownListsDTO
+                .builder()
+                .itemTypeList(itemTypeList)
+                .statusList(statusList)
+                .projectList(projectList)
+                .originList(originList)
+                .ramList(ramList)
+                .platformList(platformList)
+                .screenList(screenList)
+                .storageList(storageList)
+                .build();
         DeviceExcelTemplate deviceExcelTemplate = new DeviceExcelTemplate();
         deviceExcelTemplate.export(response, dropDownListsDTO);
     }
@@ -389,15 +383,17 @@ public class DeviceServiceImp implements DeviceService {
         List<StatusList> statusList = getStatusList();
         List<ProjectList> projectList = getProjectList();
         List<OriginList> originList = getOriginList();
-        DropdownValuesResponse response = new DropdownValuesResponse();
-        response.setItemTypeList(itemTypeList);
-        response.setRamList(ramList);
-        response.setPlatformList(platformList);
-        response.setScreenList(screenList);
-        response.setStorageList(storageList);
-        response.setStatusList(statusList);
-        response.setProjectList(projectList);
-        response.setOriginList(originList);
+        DropdownValuesResponse response = DropdownValuesResponse
+                .builder()
+                .itemTypeList(itemTypeList)
+                .ramList(ramList)
+                .platformList(platformList)
+                .screenList(screenList)
+                .storageList(storageList)
+                .statusList(statusList)
+                .projectList(projectList)
+                .originList(originList)
+                .build();
         return response;
     }
 
@@ -522,17 +518,19 @@ public class DeviceServiceImp implements DeviceService {
         int totalElements = deviceList.size();
         deviceList = getPage(deviceList, pageIndex, pageSize); /*Pagination*/
         /* Return the desired response*/
-        OwnDeviceResponse response = new OwnDeviceResponse();
-        response.setDevicesList(deviceList);
-        response.setPageNo(pageIndex);
-        response.setPageSize(pageSize);
-        response.setTotalElements(totalElements);
-        response.setTotalPages(getTotalPages(pageSize, totalElements));
-        response.setStatusList(statusList);
-        response.setOriginList(originList);
-        response.setProjectList(projectList);
-        response.setItemTypeList(itemTypeList);
-        response.setKeeperNumberOptions(keeperNumberOptions);
+        OwnDeviceResponse response = OwnDeviceResponse
+                .builder()
+                .devicesList(deviceList)
+                .pageNo(pageIndex)
+                .pageSize(pageSize)
+                .totalElements(totalElements)
+                .totalPages(getTotalPages(pageSize, totalElements))
+                .statusList(statusList)
+                .originList(originList)
+                .projectList(projectList)
+                .itemTypeList(itemTypeList)
+                .keeperNumberOptions(keeperNumberOptions)
+                .build();
         return response;
     }
 
@@ -545,10 +543,9 @@ public class DeviceServiceImp implements DeviceService {
             return null;
         }
 
-        KeepingDeviceResponse response = new KeepingDeviceResponse();
         List<KeepingDeviceDTO> keepingDeviceList = getDevicesOfKeeper(keeperId, deviceFilter);
         if(keepingDeviceList == null) {
-            return response;
+            return new KeepingDeviceResponse();
         }
         List<String> statusList = keepingDeviceList.stream().map(KeepingDeviceDTO::getStatus).distinct().toList();
         List<String> originList = keepingDeviceList.stream().map(KeepingDeviceDTO::getOrigin).distinct().toList();
@@ -558,16 +555,19 @@ public class DeviceServiceImp implements DeviceService {
         int totalElements = keepingDeviceList.size();
         keepingDeviceList = getPageForKeepingDevices(keepingDeviceList, pageIndex, pageSize); /*Pagination*/
         /* Return the desired response*/
-        response.setDevicesList(keepingDeviceList);
-        response.setPageNo(pageIndex);
-        response.setPageSize(pageSize);
-        response.setTotalElements(totalElements);
-        response.setTotalPages(getTotalPages(pageSize, totalElements));
-        response.setStatusList(statusList);
-        response.setOriginList(originList);
-        response.setProjectList(projectList);
-        response.setItemTypeList(itemTypeList);
-        response.setKeeperNumberOptions(keeperNumberOptions);
+        KeepingDeviceResponse response = KeepingDeviceResponse
+                .builder()
+                .devicesList(keepingDeviceList)
+                .pageNo(pageIndex)
+                .pageSize(pageSize)
+                .totalElements(totalElements)
+                .totalPages(getTotalPages(pageSize, totalElements))
+                .statusList(statusList)
+                .originList(originList)
+                .projectList(projectList)
+                .itemTypeList(itemTypeList)
+                .keeperNumberOptions(keeperNumberOptions)
+                .build();
         return response;
     }
 
@@ -629,8 +629,8 @@ public class DeviceServiceImp implements DeviceService {
     }
 
     private void formatFilter(FilterDeviceDTO deviceFilterDTO) {
-        if(deviceFilterDTO.getName() != null) {
-            deviceFilterDTO.setName(deviceFilterDTO.getName().trim().toLowerCase());
+        if(deviceFilterDTO.getDeviceName() != null) {
+            deviceFilterDTO.setDeviceName(deviceFilterDTO.getDeviceName().trim().toLowerCase());
         }
 
         if(deviceFilterDTO.getPlatformName() != null) {
@@ -641,16 +641,16 @@ public class DeviceServiceImp implements DeviceService {
             deviceFilterDTO.setPlatformVersion(deviceFilterDTO.getPlatformVersion().trim().toLowerCase());
         }
 
-        if(deviceFilterDTO.getRam() != null) {
-            deviceFilterDTO.setRam(deviceFilterDTO.getRam().trim().toLowerCase());
+        if(deviceFilterDTO.getRamSize() != null) {
+            deviceFilterDTO.setRamSize(deviceFilterDTO.getRamSize().trim().toLowerCase());
         }
 
-        if(deviceFilterDTO.getScreen() != null) {
-            deviceFilterDTO.setScreen(deviceFilterDTO.getScreen().trim().toLowerCase());
+        if(deviceFilterDTO.getScreenSize() != null) {
+            deviceFilterDTO.setScreenSize(deviceFilterDTO.getScreenSize().trim().toLowerCase());
         }
 
-        if(deviceFilterDTO.getStorage() != null) {
-            deviceFilterDTO.setStorage(deviceFilterDTO.getStorage().trim().toLowerCase());
+        if(deviceFilterDTO.getStorageSize() != null) {
+            deviceFilterDTO.setStorageSize(deviceFilterDTO.getStorageSize().trim().toLowerCase());
         }
 
         if(deviceFilterDTO.getInventoryNumber() != null) {
@@ -675,10 +675,10 @@ public class DeviceServiceImp implements DeviceService {
     }
 
     private List<Device> fetchFilteredDevice(FilterDeviceDTO deviceFilter, List<Device> devices) {
-        if(deviceFilter.getName() != null) {
+        if(deviceFilter.getDeviceName() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getName().toLowerCase().equals(deviceFilter.getName()))
+                    .filter(device -> device.getName().toLowerCase().equals(deviceFilter.getDeviceName()))
                     .collect(Collectors.toList());
         }
         if(deviceFilter.getStatus() != null) {
@@ -713,22 +713,22 @@ public class DeviceServiceImp implements DeviceService {
                     .filter(device -> device.getItemType().getName().equalsIgnoreCase(deviceFilter.getItemType()))
                     .collect(Collectors.toList());
         }
-        if(deviceFilter.getRam() != null) {
+        if(deviceFilter.getRamSize() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getRam().getSize().equalsIgnoreCase(deviceFilter.getRam()))
+                    .filter(device -> device.getRam().getSize().equalsIgnoreCase(deviceFilter.getRamSize()))
                     .collect(Collectors.toList());
         }
-        if(deviceFilter.getScreen() != null) {
+        if(deviceFilter.getScreenSize() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getScreen().getSize().equalsIgnoreCase(deviceFilter.getScreen()))
+                    .filter(device -> device.getScreen().getSize().equalsIgnoreCase(deviceFilter.getScreenSize()))
                     .collect(Collectors.toList());
         }
-        if(deviceFilter.getStorage() != null) {
+        if(deviceFilter.getStorageSize() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getStorage().getSize().equalsIgnoreCase(deviceFilter.getStorage()))
+                    .filter(device -> device.getStorage().getSize().equalsIgnoreCase(deviceFilter.getStorageSize()))
                     .collect(Collectors.toList());
         }
         if(deviceFilter.getOwner() != null) {
@@ -890,33 +890,6 @@ public class DeviceServiceImp implements DeviceService {
         return keywordList;
     }
 
-//    private Set<String> selectColumnForKeepingDevicesKeywordSuggestion(List<KeepingDeviceDTO> deviceList, String keyword, int fieldColumn) {
-//        Set<String> keywordList = new HashSet<>();
-//        Stream<String> mappedDeviceList = null;
-//        KeywordSuggestion keywordSuggestion = new KeywordSuggestion();
-//        keywordSuggestion.add(deviceList);
-//        switch (fieldColumn) { /*Fetch only one column*/
-//            case DEVICE_NAME_COLUMN -> keywordSuggestion.setStrategy(new NameSuggestion());
-//            case DEVICE_PLATFORM_NAME_COLUMN -> keywordSuggestion.setStrategy(new PlatformNameSuggestion());
-//            case DEVICE_PLATFORM_VERSION_COLUMN -> keywordSuggestion.setStrategy(new PlatformVersionSuggestion());
-//            case DEVICE_RAM_COLUMN -> keywordSuggestion.setStrategy(new RamSuggestion());
-//            case DEVICE_SCREEN_COLUMN -> keywordSuggestion.setStrategy(new ScreenSuggestion());
-//            case DEVICE_STORAGE_COLUMN -> keywordSuggestion.setStrategy(new StorageSuggestion());
-//            case DEVICE_OWNER_COLUMN -> keywordSuggestion.setStrategy(new OwnerSuggestion());
-//            case DEVICE_INVENTORY_NUMBER_COLUMN -> keywordSuggestion.setStrategy(new InventoryNumberSuggestion());
-//            case DEVICE_SERIAL_NUMBER_COLUMN -> keywordSuggestion.setStrategy(new SerialNumberSuggestion());
-//            case DEVICE_KEEPER_COLUMN -> keywordSuggestion.setStrategy(new KeeperSuggestion());
-//        }
-//        mappedDeviceList = keywordSuggestion.suggest();
-//        if(mappedDeviceList != null) {
-//            keywordList = mappedDeviceList
-//                    .filter(element -> element.toLowerCase().contains(keyword.strip().toLowerCase()))
-//                    .limit(20)
-//                    .collect(Collectors.toSet());
-//        }
-//        return keywordList;
-//    }
-
     private Boolean useNonExistent(String owner) {
         return findUserByName(owner) == null;
     }
@@ -1056,10 +1029,10 @@ public class DeviceServiceImp implements DeviceService {
     }
 
     private List<KeepingDeviceDTO> fetchFilteredKeepingDevice(FilterDeviceDTO deviceFilter, List<KeepingDeviceDTO> devices) {
-        if(deviceFilter.getName() != null) {
+        if(deviceFilter.getDeviceName() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getDeviceName().toLowerCase().equals(deviceFilter.getName()))
+                    .filter(device -> device.getDeviceName().toLowerCase().equals(deviceFilter.getDeviceName()))
                     .collect(Collectors.toList());
         }
         if(deviceFilter.getStatus() != null) {
@@ -1089,22 +1062,22 @@ public class DeviceServiceImp implements DeviceService {
                     .filter(device -> device.getItemType().toLowerCase().equals(deviceFilter.getItemType()))
                     .collect(Collectors.toList());
         }
-        if(deviceFilter.getRam() != null) {
+        if(deviceFilter.getRamSize() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getRamSize().toLowerCase().equals(deviceFilter.getRam()))
+                    .filter(device -> device.getRamSize().toLowerCase().equals(deviceFilter.getRamSize()))
                     .collect(Collectors.toList());
         }
-        if(deviceFilter.getScreen() != null) {
+        if(deviceFilter.getScreenSize() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getStorageSize().toLowerCase().equals(deviceFilter.getScreen()))
+                    .filter(device -> device.getStorageSize().toLowerCase().equals(deviceFilter.getScreenSize()))
                     .collect(Collectors.toList());
         }
-        if(deviceFilter.getStorage() != null) {
+        if(deviceFilter.getStorageSize() != null) {
             devices = devices
                     .stream()
-                    .filter(device -> device.getStorageSize().toLowerCase().equals(deviceFilter.getStorage()))
+                    .filter(device -> device.getStorageSize().toLowerCase().equals(deviceFilter.getStorageSize()))
                     .collect(Collectors.toList());
         }
         if(deviceFilter.getOwner() != null) {
@@ -1171,7 +1144,9 @@ public class DeviceServiceImp implements DeviceService {
             } else {
                 devices = devices
                         .stream()
-                        .filter(device -> device.getKeeperNumber() == 3 && device.getStatus().equalsIgnoreCase("OCCUPIED"))
+                        .filter(device -> device.getKeeperNumber() == 3 && device
+                                .getStatus()
+                                .equalsIgnoreCase("OCCUPIED"))
                         .collect(Collectors.toList());
             }
         }

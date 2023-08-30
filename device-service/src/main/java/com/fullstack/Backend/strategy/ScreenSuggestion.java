@@ -1,15 +1,15 @@
-package com.fullstack.Backend.keyword;
+package com.fullstack.Backend.strategy;
 
 import com.fullstack.Backend.dto.device.ReadableDeviceDTO;
 
 import java.util.List;
 import java.util.stream.Stream;
 
-public class RamSuggestion implements KeywordSuggestionStrategy{
+public class ScreenSuggestion implements KeywordSuggestionStrategy{
     @Override
     public Stream<String> suggestKeyword(List<? extends ReadableDeviceDTO> deviceList) {
         return deviceList.stream()
                          .map(d -> (ReadableDeviceDTO) d)
-                         .map(ReadableDeviceDTO::getRamSize);
+                         .map(ReadableDeviceDTO::getScreenSize);
     }
 }

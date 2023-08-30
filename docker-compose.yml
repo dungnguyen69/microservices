@@ -54,8 +54,6 @@ services:
     container_name: zipkin
     ports:
       - "9411:9411"
-#    environment:
-#      - MANAGEMENT.ZIPKIN.TRACING.ENDPOINT=http://zipkin:9411/api/v2/spans
     restart: always
 
   ## Eureka Server

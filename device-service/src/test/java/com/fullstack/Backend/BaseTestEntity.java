@@ -6,7 +6,7 @@ import org.testcontainers.containers.MySQLContainer;
 
 public class BaseTestEntity {
     static MySQLContainer mySQLContainer = new MySQLContainer<>("mysql:latest")
-            .withDatabaseName("devicemanagementdb-test")
+            .withDatabaseName("devicemanagementdb")
             .withUsername("testuser")
             .withPassword("123456789");
 

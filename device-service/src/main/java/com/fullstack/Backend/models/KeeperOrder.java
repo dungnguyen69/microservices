@@ -30,13 +30,13 @@ public class KeeperOrder extends BaseEntity {
         this.dueDate = dueDate;
     }
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "device_Id_FK"))
     private Device device;
     @Column(name = "device_Id", nullable = false)
     private int device_Id;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "keeper_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "keeper_Id_FK"))
     private User keeper;
     @Column(name = "keeper_Id", nullable = false)

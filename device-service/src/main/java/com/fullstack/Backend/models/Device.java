@@ -32,7 +32,7 @@ public class Device extends BaseEntity {
     @Enumerated(EnumType.ORDINAL)
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "platform_Id", nullable = false, referencedColumnName = "id", insertable = false,
             updatable = false, foreignKey = @ForeignKey(name = "platform_Id_FK"))
     @JsonIgnore()
@@ -40,7 +40,7 @@ public class Device extends BaseEntity {
     @Column(name = "platform_Id", nullable = false)
     private int platformId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_type_Id", nullable = false, referencedColumnName = "id", insertable = false,
             updatable = false, foreignKey = @ForeignKey(name = "item_type_Id_FK"))
     @JsonIgnore()
@@ -48,7 +48,7 @@ public class Device extends BaseEntity {
     @Column(name = "item_type_Id", nullable = false)
     private int itemTypeId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ram_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false,
             foreignKey = @ForeignKey(name = "ram_Id_FK"))
     @JsonIgnore()
@@ -56,7 +56,7 @@ public class Device extends BaseEntity {
     @Column(name = "ram_Id", nullable = false)
     private int ramId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "screen_Id", nullable = false, referencedColumnName = "id", insertable = false,
             updatable = false, foreignKey = @ForeignKey(name = "screen_Id_FK"))
     @JsonIgnore()
@@ -64,7 +64,7 @@ public class Device extends BaseEntity {
     @Column(name = "screen_Id", nullable = false)
     private int screenId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "storage_Id", nullable = false, referencedColumnName = "id", insertable = false,
             updatable = false, foreignKey = @ForeignKey(name = "storage_Id_FK"))
     @JsonIgnore()
@@ -72,7 +72,7 @@ public class Device extends BaseEntity {
     @Column(name = "storage_Id")
     private int storageId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_Id", nullable = false, referencedColumnName = "id", insertable = false, updatable = false,
             foreignKey = @ForeignKey(name = "owner_Id_FK"))
     @JsonIgnore()
