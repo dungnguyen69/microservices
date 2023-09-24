@@ -1,8 +1,5 @@
 package com.fullstack.Backend.models;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fullstack.Backend.validation.annotations.ValidEmail;
 import jakarta.persistence.*;
@@ -13,6 +10,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,7 +21,10 @@ import lombok.Setter;
 @Table(name = "Users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "userName"),
-                @UniqueConstraint(columnNames = "email")})
+                @UniqueConstraint(columnNames = "email")},
+        indexes = {
+                @Index(name = "user_id_idx", columnList = "id", unique = true)
+        })
 public class User extends BaseEntity {
     @Column(nullable = false)
     private String badgeId;

@@ -12,14 +12,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity) {
-        serverHttpSecurity
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(exchange -> exchange
-                        .pathMatchers("/eureka/**", "/api/users/**", "/api/devices/**", "/api/requests/**",
-                                "/api/keeper-orders/**")
-                        .permitAll()
-                        .anyExchange()
-                        .authenticated());
+//        serverHttpSecurity.csrf(ServerHttpSecurity.CsrfSpec::disable).authorizeExchange(
+//                exchange -> exchange.pathMatchers("/eureka/**", "/api/users/**", "/api/devices/**", "/api/requests/**",
+//                        "/api/keeper-orders/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll());
+        serverHttpSecurity.csrf().disable().httpBasic().disable();
+
         //https://github.com/spring-projects/spring-security/issues/13446
         return serverHttpSecurity.build();
     }

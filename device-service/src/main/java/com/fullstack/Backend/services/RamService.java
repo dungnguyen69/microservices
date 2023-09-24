@@ -7,9 +7,9 @@ import com.fullstack.Backend.models.Ram;
 import com.fullstack.Backend.utils.dropdowns.RamList;
 
 public interface RamService {
-	public CompletableFuture<Ram> findBySize(String size);
-	public CompletableFuture<Boolean> doesRamExist(int id);
-	public CompletableFuture<List<String>> getRamList();
+	public Ram findBySize(String size);
+	public Boolean doesRamExist(int id);
+	public List<String> getRamList();
 
-	public CompletableFuture<List<RamList>> fetchRams();
+	public List<RamList> fetchRams();
 }

@@ -21,7 +21,10 @@ import lombok.Setter;
 @Table(name = "Users",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "userName"),
-                @UniqueConstraint(columnNames = "email")})
+                @UniqueConstraint(columnNames = "email")},
+        indexes = {
+                @Index(name = "user_id_idx", columnList = "id", unique = true)
+        })
 public class User extends BaseEntity {
     @Column(nullable = false)
     private String badgeId;

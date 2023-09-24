@@ -1,0 +1,55 @@
+eureka:
+    client:
+        serviceUrl:
+            defaultZone: http://${EUREKA_SERVER:localhost}:8761/eureka
+management:
+    zipkin:
+        tracing:
+            endpoint: http://${ZIPKIN:localhost}:9411/api/v2/spans
+server:
+    port: 8090
+spring:
+    cloud:
+        gateway:
+            routes:
+            -   id: device-service
+                predicates:
+                - Path=/api/devices/**
+                uri: lb://device-service
+            -   id: user-service
+                predicates:
+                - Path=/api/users/**
+                uri: lb://user-service
+            -   id: request-service
+                predicates:
+                - Path=/api/requests/**
+                uri: lb://request-service
+            -   id: keeper-order-service
+                predicates:
+                - Path=/api/keeper-orders/**
+                uri: lb://keeper-order-service
+            -   filters:
+                - SetPath=/
+                id: discovery-server
+                predicates:
+                - Path=/eureka/web
+                uri: http://${EUREKA_SERVER:localhost}:8761
+            -   id: discovery-server-static
+                predicates:
+                - Path=/eureka/**
+                uri: http://${EUREKA_SERVER:localhost}:8761
+            -   id: openapi
+                predicates:
+                - Path=/v3/api-docs/**
+                uri: http://${API_GATEWAY:localhost}:${server.port}
+springdoc:
+    swagger-ui:
+        urls:
+        -   name: device
+            url: http://localhost:8081/v3/api-docs
+        -   name: user
+            url: http://localhost:8082/v3/api-docs
+        -   name: request
+            url: http://localhost:8083/v3/api-docs
+        -   name: keeper-order
+            url: http://localhost:8084/v3/api-docs

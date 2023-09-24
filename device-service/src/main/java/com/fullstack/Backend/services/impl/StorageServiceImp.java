@@ -1,48 +1,39 @@
 package com.fullstack.Backend.services.impl;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-
 import com.fullstack.Backend.models.Storage;
 import com.fullstack.Backend.repositories.interfaces.StorageRepository;
 import com.fullstack.Backend.services.StorageService;
 import com.fullstack.Backend.utils.dropdowns.StorageList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @CacheConfig(cacheNames = {"storage"})
 public class StorageServiceImp implements StorageService {
 
-	@Autowired
+    @Autowired
     StorageRepository _storageRepository;
 
-	@Async
-	@Override
-	@Cacheable(key = "size")
-	public CompletableFuture<Storage> findBySize(String size) {
-		return CompletableFuture.completedFuture(_storageRepository.findBySize(size));
-	}
+    @Override
+    public Storage findBySize(String size) {
+        return _storageRepository.findBySize(size);
+    }
 
-	@Async
-	@Override
-	public CompletableFuture<Boolean> doesStorageExist(int id) {
-		return CompletableFuture.completedFuture(_storageRepository.existsById((long) id));
-	}
+    @Override
+    public Boolean doesStorageExist(int id) {
+        return _storageRepository.existsById((long) id);
+    }
 
-	@Async
-	@Override
-	public CompletableFuture<List<String>> getStorageList() {
-		return CompletableFuture.completedFuture(_storageRepository.findStorageSize());
-	}
+    @Override
+    public List<String> getStorageList() {
+        return _storageRepository.findStorageSize();
+    }
 
-	@Async
-	@Override
-	public CompletableFuture<List<StorageList>> fetchStorage() {
-		return CompletableFuture.completedFuture(_storageRepository.fetchStorage());
-	}
+    @Override
+    public List<StorageList> fetchStorage() {
+        return _storageRepository.fetchStorage();
+    }
 }

@@ -8,6 +8,10 @@ import java.util.Date;
 
 @Data
 @Entity(name = "PasswordResetToken")
+@Table(indexes = {
+        @Index(name = "password_reset_token_id", columnList = "id", unique = true),
+        @Index(name = "user_id_idx", columnList = "user_id")
+})
 public class PasswordResetToken {
     private static final int EXPIRATION = 60 * 24;
 

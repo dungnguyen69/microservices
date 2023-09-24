@@ -6,6 +6,7 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
+<<<<<<< HEAD
 name: build CI/CD flow
 
 on:
@@ -14,6 +15,18 @@ on:
   pull_request:
     branches: [ "master" ]
 
+=======
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "development" ]
+  pull_request:
+    branches: [ "development" ]
+    
+permissions: write-all
+  
+>>>>>>> 5a117d1caaaff1e11318992c5731a8581a78121f
 jobs:
   build:
 
@@ -28,7 +41,11 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
+<<<<<<< HEAD
       run: mvn clean install
+=======
+      run: mvn -B package --file pom.xml
+>>>>>>> 5a117d1caaaff1e11318992c5731a8581a78121f
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph

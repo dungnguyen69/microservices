@@ -6,11 +6,12 @@ import com.fullstack.Backend.services.KeeperOrderService;
 import jakarta.transaction.Transactional;
 import lombok.extern.java.Log;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @Service
 @Transactional
@@ -21,9 +22,7 @@ public class KeeperOrderServiceImp implements KeeperOrderService {
 
     @Override
     public List<KeeperOrder> getListByDeviceId(int deviceId) {
-        List<KeeperOrder> lists = _keeperOrderRepository.findKeeperOrderByDeviceId(deviceId);
-        log.info(String.valueOf(lists));
-        return lists;
+        return _keeperOrderRepository.findKeeperOrderByDeviceId(deviceId);
     }
 
     @Override
@@ -39,11 +38,6 @@ public class KeeperOrderServiceImp implements KeeperOrderService {
     @Override
     public void update(KeeperOrder keeperOrder) {
         _keeperOrderRepository.save(keeperOrder);
-    }
-
-    @Override
-    public List<KeeperOrder> getAllKeeperOrders() {
-        return _keeperOrderRepository.findAll();
     }
 
     @Override

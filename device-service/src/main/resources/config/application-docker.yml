@@ -1,0 +1,9 @@
+server:
+    port: 8081
+spring:
+    datasource:
+        password: 123456789
+        url: jdbc:mysql://mysql:3306/devicemanagementdb
+        username: root
+    redis:
+        host: redis

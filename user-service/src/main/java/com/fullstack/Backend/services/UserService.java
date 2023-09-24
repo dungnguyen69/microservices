@@ -15,17 +15,12 @@ import org.springframework.stereotype.Service;
 public interface UserService {
     public Optional<User> findById(int id) throws InterruptedException;
 
-    public Boolean doesUserExist(int id);
-
-    public ResponseEntity<Object> findByUsername(String username);
+    public User findByUsername(String username);
 
     public ResponseEntity<Object> authenticateUser(LoginDTO loginRequest, Authentication
             authentication);
 
     public ResponseEntity<Object> registerUser(RegisterDTO registerRequest, String siteURL) throws
-            MessagingException, UnsupportedEncodingException;
-
-    public void sendVerificationEmail(User user, String siteURL) throws
             MessagingException, UnsupportedEncodingException;
 
     public ResponseEntity<Object> verify(String verificationCode) throws ExecutionException, InterruptedException;

@@ -1,0 +1,11 @@
+server:
+    port: 8083
+spring:
+    datasource:
+        password: 123456789
+        url: jdbc:mysql://mysql:3306/devicemanagementdb
+        username: root
+    kafka:
+        bootstrap-servers: broker:29092
+    redis:
+        host: redis

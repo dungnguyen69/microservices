@@ -1,0 +1,32 @@
+eureka:
+    client:
+        serviceUrl:
+            defaultZone: http://${EUREKA_SERVER:localhost}:8761/eureka
+logging:
+    level:
+        org:
+            hibernate:
+                type: TRACE
+management:
+    zipkin:
+        tracing:
+            endpoint: http://${ZIPKIN:localhost}:9411/api/v2/spans
+spring:
+    datasource:
+        driverClassName: com.mysql.cj.jdbc.Driver
+        password: ${MYSQL_PASSWORD}
+        url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/devicemanagementdb
+        username: ${MYSQL_USER}
+    jpa:
+        hibernate:
+            ddl-auto: none
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.MySQL5Dialect
+                format_sql: true
+        show-sql: true
+    kafka:
+        bootstrap-servers: ${KAFKA_SERVER:localhost:9092}
+    redis:
+        host: ${REDIS:localhost}
+        port: 6379

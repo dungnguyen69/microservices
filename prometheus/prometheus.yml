@@ -1,0 +1,36 @@
+global:
+  scrape_interval:     10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: 'device_service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['device-service:8080']
+        labels:
+          application: 'Device Service Application'
+  - job_name: 'keeper_order_service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['keeper-order-service:8080']
+        labels:
+          application: 'Keeper Order Service Application'
+  - job_name: 'request_service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['request-service:8080']
+        labels:
+          application: 'Request Service Application'
+  - job_name: 'user_service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['user-service:8080']
+        labels:
+          application: 'User Service Application'
+
+  - job_name: 'notification_service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['notification-service:8080']
+        labels:
+          application: 'Notification Service Application'

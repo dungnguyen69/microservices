@@ -10,22 +10,6 @@ import java.util.Date;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class FilterDeviceDTO {
-	private String name;
-	private String status;
-	private String platformName;
-	private String platformVersion;
-	private String itemType;
-	private String ram;
-	private String screen;
-	private String storage;
-	private String owner;
-	private String keeper;
+public class FilterDeviceDTO extends ReadableDeviceDTO{
 	private String keeperNo;
-	private String inventoryNumber;
-	private String serialNumber;
-	private String origin;
-	private String project;
-	private Date bookingDate;
-	private Date returnDate;
 }

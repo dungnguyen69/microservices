@@ -9,11 +9,13 @@ import com.fullstack.Backend.enums.Origin;
 import com.fullstack.Backend.enums.Project;
 import com.fullstack.Backend.enums.Status;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
 public class UpdateDeviceDTO {
     private int id;
     private String name;

@@ -1,3 +1,4 @@
+CREATE DATABASE IF NOT EXISTS devicemanagementdb;
 CREATE TABLE IF NOT EXISTS devices (
   id INT AUTO_INCREMENT NOT NULL,
    created_date datetime NOT NULL,
@@ -241,7 +242,8 @@ ALTER TABLE users_system_roles ADD CONSTRAINT systemRoles_Id_FK FOREIGN KEY (use
 
 ALTER TABLE users_system_roles ADD CONSTRAINT systemRoles_Id_FKQMkWSK FOREIGN KEY (system_roles_id) REFERENCES system_roles (id) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
-insert into item_types values(1,CURDATE(),null,'N/A');
+SET FOREIGN_KEY_CHECKS=0;
+REPLACE into item_types values(1,CURDATE(),null,'N/A');
 REPLACE into item_types values(2,CURDATE(),null,'Laptop');
 REPLACE into item_types values(3,CURDATE(),null,'Desktop');
 REPLACE into item_types values(4,CURDATE(),null,'Mobile');
@@ -265,51 +267,51 @@ REPLACE into platform values(8,CURDATE(),NULL,'iOs','8.2');
 REPLACE into platform values(9,CURDATE(),NULL,'iOs','12.1');
 REPLACE into platform values(10,CURDATE(),NULL,'iOs','15.1');
 
-REPLACE into rams values(1,CURDATE(),NULL,3);
-REPLACE into rams values(2,CURDATE(),NULL,4);
-REPLACE into rams values(3,CURDATE(),NULL,16);
-REPLACE into rams values(4,CURDATE(),NULL,32);
-REPLACE into rams values(5,CURDATE(),NULL,8);
-REPLACE into rams values(6,CURDATE(),NULL,64);
-REPLACE into rams values(7,CURDATE(),NULL,128);
-REPLACE into rams values(8,CURDATE(),NULL,256);
+REPLACE into rams values(1,CURDATE(),NULL,'N/A');
+REPLACE into rams values(2,CURDATE(),NULL,'4 GB');
+REPLACE into rams values(3,CURDATE(),NULL,'8 GB');
+REPLACE into rams values(4,CURDATE(),NULL,'16 GB');
+REPLACE into rams values(5,CURDATE(),NULL,'32 GB');
+REPLACE into rams values(6,CURDATE(),NULL,'64 GB');
+REPLACE into rams values(7,CURDATE(),NULL,'128 GB');
+REPLACE into rams values(8,CURDATE(),NULL,'256 GB');
 
-REPLACE into storages values(1,CURDATE(),NULL,164);
-REPLACE into storages values(2,CURDATE(),NULL,256);
-REPLACE into storages values(3,CURDATE(),NULL,300);
-REPLACE into storages values(4,CURDATE(),NULL,512);
-REPLACE into storages values(5,CURDATE(),NULL,128);
-REPLACE into storages values(6,CURDATE(),NULL,1024);
+REPLACE into storages values(1,CURDATE(),NULL,'N/A');
+REPLACE into storages values(2,CURDATE(),NULL,'512 GB');
+REPLACE into storages values(3,CURDATE(),NULL,'1024 GB');
+REPLACE into storages values(4,CURDATE(),NULL,'2048 GB');
+REPLACE into storages values(5,CURDATE(),NULL,'4096 GB');
+REPLACE into storages values(6,CURDATE(),NULL,'9192 GB');
+REPLACE into storages values(6,CURDATE(),NULL,'10000 GB');
+
+REPLACE into screens values(1,CURDATE(),NULL,'N/A');
+REPLACE into screens values(2,CURDATE(),NULL,'13 inch');
+REPLACE into screens values(3,CURDATE(),NULL,'13.5 inch');
+REPLACE into screens values(4,CURDATE(),NULL,'14 inch');
+REPLACE into screens values(5,CURDATE(),NULL,'15.6 inch');
+REPLACE into screens values(6,CURDATE(),NULL,'21 inch');
+
+REPLACE INTO system_role_permission VALUES(1, 1, 1);
+REPLACE INTO system_role_permission VALUES(2, 2, 1);
+REPLACE INTO system_role_permission VALUES(3, 3, 1);
+REPLACE INTO system_role_permission VALUES(4, 4, 1);
+REPLACE INTO system_role_permission VALUES(5, 5, 1);
+REPLACE INTO system_role_permission VALUES(6, 6, 1);
+
+REPLACE INTO system_roles VALUES(1, CURDATE(), CURDATE(), 'ROLE_ADMIN');
+REPLACE INTO system_roles VALUES(2, CURDATE(), CURDATE(), 'ROLE_MODERATOR');
+REPLACE INTO system_roles VALUES(3, CURDATE(), CURDATE(), 'ROLE_USER');
 
 
-REPLACE into screens values(1,CURDATE(),NULL,17);
-REPLACE into screens values(2,CURDATE(),NULL,13);
-REPLACE into screens values(3,CURDATE(),NULL,14);
-REPLACE into screens values(4,CURDATE(),NULL,12);
-REPLACE into screens values(5,CURDATE(),NULL,16);
-REPLACE into screens values(6,CURDATE(),NULL,18);
-REPLACE into screens values(7,CURDATE(),NULL,20);
-
-INSERT INTO system_role_permission VALUES(1, 1, 1);
-INSERT INTO system_role_permission VALUES(2, 2, 1);
-INSERT INTO system_role_permission VALUES(3, 3, 1);
-INSERT INTO system_role_permission VALUES(4, 4, 1);
-INSERT INTO system_role_permission VALUES(5, 5, 1);
-INSERT INTO system_role_permission VALUES(6, 6, 1);
-
-INSERT INTO system_roles VALUES(1, CURDATE(), CURDATE(), 'ROLE_ADMIN');
-INSERT INTO system_roles VALUES(2, CURDATE(), CURDATE(), 'ROLE_MODERATOR');
-INSERT INTO system_roles VALUES(3, CURDATE(), CURDATE(), 'ROLE_USER');
-
-
-INSERT
+REPLACE
 INTO
   users
   (created_date, badge_id, user_name, password, first_name, last_name, email, phone_number, enabled)
 VALUES
   ('2023-07-17 13:10:59.162', '608616-K2SXZ', 'admin', '$2a$10$bo2W2yRKbIw/Lwgq1Cj1Ae3zTWxpHd2fwEgoyW03fcvIAFFC3ZZIC', 'Dung', 'Admin', 'admin@gmail.com', '123456789', 1);
 
-INSERT INTO users_system_roles (user_id,system_roles_id)
+REPLACE INTO users_system_roles (user_id,system_roles_id)
 SELECT id,1 FROM users
 WHERE user_name='admin';
 
+SET FOREIGN_KEY_CHECKS=1;

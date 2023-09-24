@@ -11,6 +11,9 @@ public enum RequestStatus {
 		this.id = id;
 	}
 
+	public int getValue() {
+		return id;
+	}
 	public static Optional<RequestStatus> fromNumber(int text) {
 		return Arrays.stream(values())
 				.filter(e -> e.id == text)

@@ -10,4 +10,7 @@ import lombok.Setter;
 public class StatusList {
 	private int id;
 	private String status;
+
+    public void setName(String name) {
+    }
 }

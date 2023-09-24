@@ -1,0 +1,8 @@
+app:
+    eureka-server: discovery-server
+eureka:
+    client:
+        serviceUrl:
+            defaultZone: http://discovery-server:8761/eureka
+server:
+    port: 8080

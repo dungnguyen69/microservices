@@ -1,6 +1,5 @@
 package com.fullstack.Backend.responses.users;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -27,10 +26,13 @@ public class JwtResponse {
 
     private String isEnable;
 
+    private String accessToken;
+
     private List<String> roles;
 
-    public JwtResponse(int id, String username, String email, List<String> roles, String badgeId, String firstName, String lastName, String phoneNumber, String project) {
+    public JwtResponse(int id,String accessToken, String username, String email, List<String> roles, String badgeId, String firstName, String lastName, String phoneNumber, String project) {
         this.id = id;
+        this.accessToken = accessToken;
         this.username = username;
         this.email = email;
         this.roles = roles;

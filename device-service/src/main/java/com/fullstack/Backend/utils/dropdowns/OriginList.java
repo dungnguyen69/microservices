@@ -10,4 +10,7 @@ import lombok.Setter;
 public class OriginList {
 	private int id;
 	private String origin;
+
+	public void setName(String name) {
+	}
 }
